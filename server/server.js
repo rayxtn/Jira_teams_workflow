@@ -1,7 +1,7 @@
 // This code sample uses the 'node-fetch' library:
 import fetch from 'node-fetch';
 import  express  from 'express';
-import cors from 'cors'
+import cors from 'cors';
 // eslint-disable-next-line no-undef
 const app = express()
 
@@ -22,6 +22,7 @@ app.get('/worklog/:issueIdOrKey', (req, res) => {
         timeSpent: item.timeSpentSeconds
       }))
       res.send({ worklogData: processedData })
+      console.log(processedData.item.author);
     })
     .catch(err => {
       console.log(err)
