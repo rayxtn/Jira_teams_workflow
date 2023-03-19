@@ -1,19 +1,40 @@
 import './App.css';
-import './WorklogComponent.js';
-import WorklogComponent from './WorklogComponent.js';
+import './components/WorklogComponent.js';
+import {createBrowserRouter, RouterProvider} from 'react-router-dom';
+
+
+// IMPORTING ALL COMPONENTS
+import WorklogComponent from './components/WorklogComponent.js';
+import username from './components/username';
+import Reset from './components/Reset';
+import Register from './components/Register';
+import Recovery from './components/Recovery';
+import Profile from './components/Profile';
+import Password from './components/Password';
+import PageNotFound from './components/PageNotFound';
+
+
+
+//ROUTE ROUTES
+const router = createBrowserRouter([
+  { path : '/',
+    element : <div>Root Route</div>
+  },
+  { path : '/register',
+  element : <div>Register Route</div>
+}
+]);
+
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-      <WorklogComponent />
-      </header>
-      <h1 className="text-3xl font-bold underline">
-      Hello world!
-    </h1>
-    </div>
+    <main>
+           <RouterProvider router={router}></RouterProvider>
+
+    </main>
   );
 }
+
 
 
 export default App;
