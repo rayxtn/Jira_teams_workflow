@@ -4,6 +4,7 @@ import logo from '../assets/logotest.png';
 import styles from '../styles/Username.modules.css';
 import {Toaster} from 'react-hot-toast';
 import { useFormik } from 'formik';
+import { UsernameValidate } from '../helper/validate';
 
 
 export default function Username() {
@@ -11,6 +12,7 @@ export default function Username() {
     initialValues:{
       username : ''
     },
+    validate : UsernameValidate,
     validateOnBlur:false,
     validateOnChange:false,
     onSubmit : async values=>{
@@ -19,6 +21,7 @@ export default function Username() {
 });
   return (
     <div className="container" style={styles.box}>
+    <Toaster position='top-center' reverseOrder={false}></Toaster>
             <div className='flex justify-center items-center h-screen'>
             <div className="">
              <div className='title flex flex-col items-center'>
