@@ -23,7 +23,7 @@ export default function Username() {
 
   //PAGE CONTENT
   return (
-    <div className="container" style={styles.box}>
+    <div className="container mx-auto" style={styles.box}>
       <Toaster position="top-center" reverseOrder={false}></Toaster>
       <div className="flex justify-center items-center h-screen">
         <div className="">

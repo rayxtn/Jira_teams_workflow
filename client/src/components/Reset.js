@@ -4,6 +4,7 @@ import React from "react";
 import styles from "../styles/Username.modules.css";
 import { Toaster } from "react-hot-toast";
 import { useFormik } from "formik";
+
 import { PasswordConfirmValidation } from "../helper/validate";
 
 export default function Reset() {
@@ -12,7 +13,7 @@ export default function Reset() {
   const formik = useFormik({
     initialValues: {
       Password: '',
-      confirm_pwd : ''
+      confirm_pwd: '',
     },
     validate: PasswordConfirmValidation,
     validateOnBlur: false,
@@ -24,7 +25,7 @@ export default function Reset() {
 
   //PAGE CONTENT
   return (
-    <div className="container" style={styles.box}>
+    <div className="container mx-auto" style={styles.box}>
       <Toaster position="top-center" reverseOrder={false}></Toaster>
       <div className="flex justify-center items-center h-screen">
         <div className="">
@@ -36,10 +37,9 @@ export default function Reset() {
             <form className="py-20" onSubmit={formik.handleSubmit}>
              
               <div className="textbox" style={styles.box}>
-                <input {...formik.getFieldProps("Password")} className="textbox" type="password" placeholder="Password"/>
-                <input {...formik.getFieldProps("confirm_pwd")} className="textbox" type="password" placeholder="Confirme Password"/>
+                <input {...formik.getFieldProps('Password')} className="textbox" type="password" placeholder="New Password"/>
+                <input {...formik.getFieldProps('confirm_pwd')} className="textbox" type="password" placeholder="Repeat Password"/>
                 <button className="btn" type="submit">
-                  {" "}
                   Reset!
                 </button>
               </div>

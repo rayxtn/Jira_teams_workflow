@@ -15,14 +15,14 @@ export async function PasswordValidate(values)
 }
 //VALIDATE RESET PASSWORD
 
-export async function PasswordConfirmValidation(values)
+export async function PasswordConfirmValidation(values,value)
 {
-    const errors = PasswordVerify({},values);
+    const error = PasswordVerify({},values);
 
-    if(values.password !== values.confirm_pwd){
-        errors.exist("Password does not match ! try again..");
+    if(values.Password !== value.confirm_pwd){
+        error.exist("Password does not match ! try again..");
     }
-    return errors;
+    return error;
 }
 
 
