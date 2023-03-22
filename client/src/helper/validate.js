@@ -13,7 +13,17 @@ export async function PasswordValidate(values)
     const errors = PasswordVerify({},values);
     return errors;
 }
+//VALIDATE RESET PASSWORD
 
+export async function PasswordConfirmValidation(values)
+{
+    const errors = PasswordVerify({},values);
+
+    if(values.password !== values.confirm_pwd){
+        errors.exist("Password does not match ! try again..");
+    }
+    return errors;
+}
 
 
 // FUNCTION VALIDATE PASSWORD
