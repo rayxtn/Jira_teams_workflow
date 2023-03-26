@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import logo from "../assets/logotest.png";
 import styles from "../styles/Username.modules.css";
@@ -8,7 +8,7 @@ import { PasswordValidate } from "../helper/validate";
 
 export default function Register() {
   // FORMIK SETUP
-
+  const [file,setFile] = useState();
   const formik = useFormik({
     initialValues: {
       Email:'demoemail@domaine.com',
@@ -22,13 +22,20 @@ export default function Register() {
       console.log(values);
     },
   });
+  // FUNCTION FOR UPLOADING THE IMAGE BECAUSE FORMIK DOES NOT SUPPORT FILE UPLOAD
+const onUpload = async e =>{
+  const base64 ='';
+  setFile(base64);
+
+}
+
 
   //PAGE CONTENT
   return (
     <div className="container mx-auto" >
       <Toaster position="top-center" reverseOrder={false}></Toaster>
       <div className="flex justify-center items-center h-screen">
-        <div className={styles.glass}>
+        <div className={styles.glass} style={{width:'35%'}}>
           <div className="title flex flex-col items-center">
             <h5 className="text-3xl font-bold">Register</h5>
             <span className="py-0 text-xl w-2/3 text-center text-gray-500">
