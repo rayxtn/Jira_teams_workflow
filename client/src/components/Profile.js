@@ -39,7 +39,7 @@ const onUpload = async e =>{
     <div className="container mx-auto" style={ProfileModules.glass}>
       <Toaster position="top-center" reverseOrder={false}></Toaster>
       <div className="flex justify-center items-center h-screen">
-        <div className='{styles.glass}' style={{width:'35%'}}>
+        <div className='{styles.glassx}' style={{width:'35%'}}>
           <div className="title flex flex-col items-center">
             <h5 className="text-3xl font-bold">Profile</h5>
             <span className="py-0 text-xl w-2/3 text-center text-gray-500">
