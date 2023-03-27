@@ -43,7 +43,7 @@ const onUpload = async e =>{
           <div className="title flex flex-col items-center">
             <h5 className="text-3xl font-bold">Profile</h5>
             <span className="py-0 text-xl w-2/3 text-center text-gray-500">
-              You can Update the Details.
+              You can Update the Details..
             </span>
             <form onSubmit={formik.handleSubmit}>
               <div className="profile flex justify-center py-1 ">

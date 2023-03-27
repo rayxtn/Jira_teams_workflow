@@ -1,4 +1,4 @@
-.glassx{
+.glass{
     @apply h-5/6 w-5/6;
 }
 .Profil_img{
@@ -6,6 +6,7 @@
 }
 .textbox{
     @apply w-3/4;
+
 }
 .btn{
     width: 120%;
