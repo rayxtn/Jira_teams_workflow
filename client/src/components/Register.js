@@ -4,7 +4,7 @@ import logo from "../assets/logotest.png";
 import styles from "../styles/Username.modules.css";
 import { Toaster } from "react-hot-toast";
 import { useFormik } from "formik";
-import { PasswordValidate } from "../helper/validate";
+import { RegisterValidation } from "../helper/validate";
 import ConvertToBase64 from "../helper/convert";
 
 export default function Register() {
@@ -16,7 +16,7 @@ export default function Register() {
       Username:'demoUsername',
       Password: 'admin@123',
     },
-    validate: PasswordValidate,
+    validate: RegisterValidation,
     validateOnBlur: false,
     validateOnChange: false,
     onSubmit: async (values) => {

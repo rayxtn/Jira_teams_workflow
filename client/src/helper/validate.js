@@ -13,6 +13,7 @@ export async function PasswordValidate(values)
     const errors = PasswordVerify({},values);
     return errors;
 }
+
 //VALIDATE RESET PASSWORD
 
 export async function PasswordConfirmValidation(values,value)
@@ -22,6 +23,20 @@ export async function PasswordConfirmValidation(values,value)
     if(values.Password !== value.confirm_pwd){
         error.exist("Password does not match ! try again..");
     }
+    return error;
+}
+//VALIDATE REGISTER FORM
+export async function RegisterValidation(values)
+{
+    const error = UsernameVerify({},values);
+    PasswordVerify(error,values);
+    EmailVerify(error,values);
+    return error;
+
+}
+//VALIDATE PROFILE PAGE
+export async function ProfileValidation(values){
+    const error = EmailVerify({},values);
     return error;
 }
 
@@ -40,16 +55,23 @@ function PasswordVerify(error={}, values)
         }
         return error;
     }
-
-
-
 // FUNCTION VALIDATE USERNAME
-
  function UsernameVerify(error={},values){
     if(!values.Username) {
         error.Username = toast.error("Username Required !");
     }else if(values.Username.includes(" ")){
         error.Username = toast.error("Invalied Username !");
+    }
+    return error;
+
+}
+//FUNCTION VALIDATE EMAIL 
+function EmailVerify(error={}, values){
+    if(!values.Email)
+    {
+        error.Email = toast.error("Email Required !");
+    }else if (values.Email.includes(" ")){
+        error.Email = toast.error("Invalied Email !");
     }
     return error;
 
