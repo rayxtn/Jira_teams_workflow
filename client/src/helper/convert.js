@@ -1,4 +1,4 @@
-export default function covertToBase64(file){
+export default function ConvertToBase64(file){
     return new Promise((resolve,reject)=>{
     const fileReader= new FileReader();
     fileReader.readAsDataURL(file);

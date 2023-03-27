@@ -5,6 +5,7 @@ import styles from "../styles/Username.modules.css";
 import { Toaster } from "react-hot-toast";
 import { useFormik } from "formik";
 import { PasswordValidate } from "../helper/validate";
+import ConvertToBase64 from "../helper/convert";
 
 export default function Register() {
   // FORMIK SETUP
@@ -19,12 +20,13 @@ export default function Register() {
     validateOnBlur: false,
     validateOnChange: false,
     onSubmit: async (values) => {
+      values = await Object.assign(values,{Profile : file || ''})
       console.log(values);
     },
   });
   // FUNCTION FOR UPLOADING THE IMAGE BECAUSE FORMIK DOES NOT SUPPORT FILE UPLOAD
 const onUpload = async e =>{
-  const base64 ='';
+  const base64 = await ConvertToBase64(e.target.files[0]);
   setFile(base64);
 
 }
@@ -46,11 +48,11 @@ const onUpload = async e =>{
               <label htmlFor="profile">
               <img
                   className="porfile_img"
-                  src={logo}
+                  src={file || logo}
                   alt="avatar"
                   style={styles.img}
                 />
-                <input type="file" id="profile" name="profile" ></input>
+                <input onChange={onUpload} type="file" id="profile" name="profile" ></input>
               </label>
               </div>
               <div className="textbox" style={styles.box}>
