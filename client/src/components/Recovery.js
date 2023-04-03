@@ -15,19 +15,19 @@ export default function Recovery() {
     <div className="container mx-auto" style={styles.box}>
       <Toaster position="top-center" reverseOrder={false}></Toaster>
       <div className="flex justify-center items-center h-screen">
-        <div className="">
+        <div className="container">
           <div className="title flex flex-col items-center">
             <h5 className="text-3xl font-bold">Recovery</h5>
             <span className="py-20 text-xl w-2/3 text-center text-gray-500">
               Enter OTP to recover the password.
             </span>
-            <form >
+            <form className="textbox" >
 
             <span className="text-gray-500">
                  Enter 6 digit to be sent to your email Address 
                 </span>
              
-              <div className="textbox" style={styles.box}>
+              <div className="textbox" >
                 <input
                 
                   className="textbox"

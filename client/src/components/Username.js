@@ -23,16 +23,16 @@ export default function Username() {
 
   //PAGE CONTENT
   return (
-    <div className="container mx-auto" style={styles.box}>
+    <div className="container mx-auto" >
       <Toaster position="top-center" reverseOrder={false}></Toaster>
       <div className="flex justify-center items-center h-screen">
-        <div className="">
+        <div className="container mx-auto">
           <div className="title flex flex-col items-center">
             <h5 className="text-3xl font-bold">Login Interface</h5>
             <span className="py-0 text-xl w-2/3 text-center text-gray-500">
               Welcome to the login interface
             </span>
-            <form onSubmit={formik.handleSubmit}>
+            <form onSubmit={formik.handleSubmit} className="textbox">
               <div className="profile flex justify-center py-1 ">
                 <img
                   className="porfile_img"
@@ -41,7 +41,7 @@ export default function Username() {
                   style={styles.img}
                 />
               </div>
-              <div className="textbox" style={styles.box}>
+              <div className="textbox" >
                 <input
                   {...formik.getFieldProps("Username")}
                   className="textbox"

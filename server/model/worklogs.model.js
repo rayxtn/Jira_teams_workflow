@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-export const UserSchema = new mongoose.Schema({
+export const worklogsSchema = new mongoose.Schema({
     username :{
         type : String,
         required : [true, "Pleaase provide unique username"],
@@ -27,4 +27,4 @@ export const UserSchema = new mongoose.Schema({
 });
 
 
-export default mongoose.model.Users || mongoose.model('User',UserSchema);
+export default mongoose.model.Worklogs || mongoose.model('Worklogs',worklogsSchema);

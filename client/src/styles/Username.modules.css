@@ -1,44 +1,131 @@
-.glass{
-    background:rgba(255, 255, 255, 0.55);
-    border-radius: 16px;
-    box-shadow: 0 4px 30px #4747470b;
-    backdrop-filter: blur(7.1px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    @apply border-4 border-gray-50 shrink-0 h-3/4 w-[30%] rounded-3xl py-20 px-7 min-h-max;
-}
-
-.profile_img{
-    @apply border-4 border-gray-100 w-[30px] rounded-full shadow-lg cursor-pointer;
-    @apply hover:border-gray-200;
-    width: 15%;
-
-}
-.textbox{
-    
-    @apply border-4 border-gray-50 shrink-0 h-3/4 w-[30%] rounded-3xl py-20 px-7 min-h-max;
-    @apply border-0 px-5 py-4 rounded-xl w-2/6 shadow-sm text-lg;
-
-    @apply focus:outline-none;
-    width: 100%;
-}
-.btn{
-    @apply border bg-indigo-500 w-3/4  rounded-lg text-gray-50 text-xl shadow-sm text-center;
-    width: 100%;
+/* Add this CSS code in a separate CSS file or in the head section of your HTML file */
+.container {
+    background-color: #f5f5f5;
     height: 100%;
-}
-.btn:hover{
-    background-color: #ff6a6a;
-}
-.box{
-   
-    height: 50%;
-    margin-top: 20%;
-    width:50%;
-}
-.img{
-    width: 20%;
-    height: 20%;
-}
-input[type="file"]{
-    display:none;
-}
+    width: 90%;
+  }
+  
+  .title {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+  
+  .title h5 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    text-align: center;
+  }
+  
+  .title span {
+    font-size: 1.2rem;
+    text-align: center;
+  }
+  
+  .textbox {
+    width: 10%;
+    margin: 1rem;
+    padding: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  }
+  
+  .textbox input {
+    width: 40%;
+    padding: 0.8rem;
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+    border: none;
+    border-bottom: 2px solid #ccc;
+  }
+  
+  .textbox input:focus {
+    outline: none;
+    border-bottom: 2px solid #2a4365;
+  }
+
+  
+  .btn {
+    width: 30%;
+    margin-top: 1.5rem;
+    padding: 0.8rem;
+    background-color: #2a4365;
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .btn:hover {
+    background-color:#f56565;
+  }
+  
+  .text-center {
+    margin-top: 2rem;
+    font-size: 1.1rem;
+  }
+  
+  .text-gray-500 {
+    color: #718096;
+  }
+  
+  .text-red-500 {
+    color: #f56565;
+    font-weight: bold;
+  }
+  
+  .profile img {
+    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    object-position: center;
+    margin-bottom: 1rem;
+  }
+  
+  .profile input[type="file"] {
+    display: none;
+  }
+  
+  .profile label {
+    cursor: pointer;
+  }
+  
+  .glass {
+    background-color: rgba(255, 255, 255, 0.6);
+    padding: 3rem;
+    border-radius: 1rem;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  @media screen and (max-width: 640px) {
+    .textbox {
+      margin: 1rem 0;
+    }
+  }
+  
+  @media screen and (max-width: 480px) {
+    .title h5 {
+      font-size: 2rem;
+    }
+  
+    .textbox input {
+      font-size: 1rem;
+    }
+  
+    .btn {
+      font-size: 1.1rem;
+    }
+  
+    .text-center {
+      font-size: 1rem;
+    }
+  }
+  

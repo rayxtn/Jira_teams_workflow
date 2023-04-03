@@ -39,13 +39,13 @@ const onUpload = async e =>{
     <div className="container mx-auto" style={ProfileModules.glass}>
       <Toaster position="top-center" reverseOrder={false}></Toaster>
       <div className="flex justify-center items-center h-screen">
-        <div className='{styles.glassx}' style={{width:'35%'}}>
+        <div className='container' >
           <div className="title flex flex-col items-center">
             <h5 className="text-3xl font-bold">Profile</h5>
             <span className="py-0 text-xl w-2/3 text-center text-gray-500">
               You can Update the Details..
             </span>
-            <form onSubmit={formik.handleSubmit}>
+            <form onSubmit={formik.handleSubmit} className="textbox">
               <div className="profile flex justify-center py-1 ">
               <label htmlFor="profile">
               <img

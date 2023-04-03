@@ -37,14 +37,14 @@ const onUpload = async e =>{
     <div className="container mx-auto" >
       <Toaster position="top-center" reverseOrder={false}></Toaster>
       <div className="flex justify-center items-center h-screen">
-        <div className={styles.glass} style={{width:'35%'}}>
+        <div className="container mx-auto" >
           <div className="title flex flex-col items-center">
-            <h5 className="text-3xl font-bold">Register</h5>
-            <span className="py-0 text-xl w-2/3 text-center text-gray-500">
+            <h5 className="text-3xl font-bold">Registration</h5>
+            <span className="py-0 text-xl text-center text-gray-500">
               Happy to see you join us !
             </span>
-            <form onSubmit={formik.handleSubmit}>
-              <div className="profile flex justify-center py-1 ">
+            <form onSubmit={formik.handleSubmit} className="textbox mx-auto">
+              <div className="profile flex justify-center py-1">
               <label htmlFor="profile">
               <img
                   className="porfile_img"
@@ -55,7 +55,7 @@ const onUpload = async e =>{
                 <input onChange={onUpload} type="file" id="profile" name="profile" ></input>
               </label>
               </div>
-              <div className="textbox" style={styles.box}>
+              <div className="textbox" >
                 <input {...formik.getFieldProps("Email")}        className="textbox" type="text"    placeholder="Email*"  />
                 <input {...formik.getFieldProps("Username")}     className="textbox" type="text"    placeholder="Username*"  />
                 <input {...formik.getFieldProps("Password")}     className="textbox" type="password"    placeholder="Password*"  />

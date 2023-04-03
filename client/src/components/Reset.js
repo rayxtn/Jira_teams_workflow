@@ -28,13 +28,13 @@ export default function Reset() {
     <div className="container mx-auto" style={styles.box}>
       <Toaster position="top-center" reverseOrder={false}></Toaster>
       <div className="flex justify-center items-center h-screen">
-        <div className="">
+        <div className="container">
           <div className="title flex flex-col items-center">
             <h5 className="text-3xl font-bold">Reset</h5>
             <span className="py-0 text-xl w-2/3 text-center text-gray-500">
               Enter New Password.
             </span>
-            <form className="py-20" onSubmit={formik.handleSubmit}>
+            <form className="textbox" onSubmit={formik.handleSubmit}>
              
               <div className="textbox" style={styles.box}>
                 <input {...formik.getFieldProps('Password')} className="textbox" type="password" placeholder="New Password"/>
