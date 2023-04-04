@@ -2,8 +2,10 @@
 import  express  from "express";
 import cors from "cors";
 import morgan from "morgan";
-import connect from "./database/connection.js";
+//import connect from "./database/connection.js";
+
 import router from "./router/route.js";
+import connectdb from "./database/connectdb.js";
 //const express = require("express");
 
 
@@ -28,7 +30,7 @@ app.use('/api',router)
 
 
 // starting the server only when we have valid connection
-connect().then( () =>{
+connectdb().then( () =>{
     try {
         app.listen(port,()=>{
             console.log("APP LISTENING ON PORT"+port)

@@ -12,6 +12,7 @@ import Recovery from './components/Recovery';
 import Profile from './components/Profile';
 import Password from './components/Password';
 import PageNotFound from './components/PageNotFound';
+import Dashboard from './components/Dashboard.js';
 
 //testing
 
@@ -41,6 +42,10 @@ const router = createBrowserRouter([
 { path : '/*',
   element : <PageNotFound></PageNotFound>
 },
+{
+  path : '/dashboard',
+  element : <Dashboard></Dashboard>
+}
 ]);
 
 

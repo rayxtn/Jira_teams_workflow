@@ -1,29 +1,25 @@
 import mongoose from 'mongoose';
+//import connectdb from '../database/connectdb.js';
 export const worklogsSchema = new mongoose.Schema({
-    username :{
+    issueId :{
         type : String,
-        required : [true, "Pleaase provide unique username"],
-        unique: [true,"Username Exist"]
-    },
-    password :{
-        type : String,
-        required : [true, "Pleaase provide a password"],
         unique: false
     },
-    email :{
+    created :{
         type : String,
-        required : [true, "Pleaase provide unique email"],
-        unique: true
     },
-    firstname :{
-        type : String},
-    lastname :{
-            type : String},
-    mobile :{
-                type : Number},
-    profile :{
-                    type : String}        
-             
+    updated :{
+        type : String,
+
+    },
+    started :{
+        type : String
+    },
+    timeSpent :{
+            type : String
+    },   
+    accountId :{
+                type : String}              
 });
 
 
