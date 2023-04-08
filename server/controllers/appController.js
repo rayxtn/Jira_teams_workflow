@@ -7,6 +7,8 @@ import bcrypt from 'bcrypt';
 import Auth from "../middleware/auth.js";
 import ENV from '../config.js'
 import crypto from 'crypto';
+import { error } from "console";
+import otpGenerator from 'otp-generator';
 
 const tokenKey = crypto.randomBytes(64).toString('base64');
 console.log(tokenKey);
@@ -238,34 +240,30 @@ body: {
     profile : ''
 }
 */
-export async function updateuser(req,res){
-    try {
-        
-        // const id = req.query.id;
-        const { userId } = req.user;
-
-        if(userId){
-            const body = req.body;
-
-            // update the data
-            userModel.updateOne({ _id : userId }, body, function(err, data){
-                if(err) throw err;
-
-                return res.status(201).send({ msg : "Record Updated...!"});
-            })
-
-        }else{
-            return res.status(401).send({ error : "User Not Found...!"});
-        }
-
-    } catch (error) {
-        return res.status(401).send({ error });
+export function updateuser(req, res) {
+    const userId = req.user;
+    console.log(userId);
+    if (userId) {
+      const body = req.body;
+  
+      // update the data
+      userModel.updateOne({ _id: userId }, body)
+        .then(() => {
+          return res.status(201).send({ msg: "Record Updated...!" });
+        })
+        .catch((error) => {
+          return res.status(401).send({ error: "User Not Found...!" });
+        });
+    } else {
+      return res.status(401).send({ error: "User Not Found...!" });
     }
-}
+  }  
   
 // get : http://localhost:8080/api/generateOTP
 export async function generateOTP(req,res){
-    res.json('generateOTP route')
+    
+    let OTP = await otpGenerator.generate(6,{lowerCaseAlphabets:false,upperCaseAlphabets:false,specialChars:false});
+
     }            
 
 // get : http://localhost:8080/api/verifyOTP

@@ -9,10 +9,10 @@ import * as Controller from '../controllers/appController.js';
 
 
 // POST Methods
-router.route('/Register').post(Controller.Register)
+router.route('/register').post(Controller.Register)
 //router.route('/RegisterMail').post(); //send email
 router.route('/Authetification').post((req,res)=>{res.end()}); //authenticate user
-router.route('/Login').post(Controller.verifyUser, Controller.login); //login in the app
+router.route('/login').post(Controller.verifyUser, Controller.login); //login in the app
 
 
 
@@ -25,7 +25,7 @@ router.route('/verifyOTP').get(Controller.verifyOTP); //verify generated OTP
 router.route('/CreateResetSession').get(Controller.createResetSession); //reset all variables
 
 // PUT Methods
-router.route('/updateuser').put(Controller.updateuser); // to update the user profile
+router.route('/updateuser').put(Auth ,Controller.updateuser); // to update the user profile
 router.route('/resetpassword').put(Controller.resetPassword); // to reset the password 
 
 export default router;

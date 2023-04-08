@@ -1,4 +1,4 @@
-// This code sample uses the 'node-fetch' library:
+// using the 'node-fetch' library:
 import worklogs from "../model/worklogs.model.js"
 import fetch from 'node-fetch';
 import  express  from 'express';
