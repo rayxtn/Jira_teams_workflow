@@ -1,185 +1,126 @@
-import userModel from "../model/user.model.js"
-import mongoose from "mongoose";
-import worklogs from "../model/worklogs.model.js"
-import jwt from 'jsonwebtoken';
-import fetch from 'node-fetch';
+import UserModel from '../model/User.model.js'
 import bcrypt from 'bcrypt';
-import Auth from "../middleware/auth.js";
+import jwt from 'jsonwebtoken';
 import ENV from '../config.js'
-import crypto from 'crypto';
-import { error } from "console";
 import otpGenerator from 'otp-generator';
-
-const tokenKey = crypto.randomBytes(64).toString('base64');
-console.log(tokenKey);
-// post : http://localhost:8080/api/register
-/*
-{
-    'username': 'admin',
-    'password': 'testpassword', 
-    'email': 'testemail@gmail.com',
-    'profile': '',    
-}
-*/
-
-
-//GET ALL ISSUES FROM THE PROJECT 
-
-// DEFINE THE PROJECT ID BEFORE POSTING
-
-
-export async function getallIssues(){
-    try{
-        const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=DIN&maxResults=1000`
-        const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF0HYsCEFOiZ7PsFk8ex7P7PL65cgCPuiUwMzcR_05BcW3tLT-WIv2_fielw_sBNBV3yCSp6xxkkqhnYjN5EzQjYkoLiDS3R7L_zC-UleRlLtoL1AN067ZTJRXjdDttgoWmgFcxPhaX_90UWLKXq3rQobBOSkhcYHnx8rUjNK4fNQk=98FC84D9').toString('base64')}`          
-        const myProjectIssues = await fetch(jiraApiUrl , {headers: { 'Authorization': authHeader, 'Accept': 'application/json' }})
-        const response = await myProjectIssues.json();
-         const allIssues = response;
-           console.log(allIssues.total);
-           const issuesData = allIssues.issues;
-            for (let i =0; i < issuesData.length;i++) {
-            console.log(issuesData[i]['id']); }
-
-                            }catch{
-        console.log(error);
-    }
-    
-    }
-
-//GET WORKLOGS
-
-export async function getWorklogs(){
-
-try{
-    const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/issue/DIN-25/worklog`
-    const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF0HYsCEFOiZ7PsFk8ex7P7PL65cgCPuiUwMzcR_05BcW3tLT-WIv2_fielw_sBNBV3yCSp6xxkkqhnYjN5EzQjYkoLiDS3R7L_zC-UleRlLtoL1AN067ZTJRXjdDttgoWmgFcxPhaX_90UWLKXq3rQobBOSkhcYHnx8rUjNK4fNQk=98FC84D9').toString('base64')}`          
-    const myworklogs = await fetch(jiraApiUrl , {headers: { 'Authorization': authHeader, 'Accept': 'application/json' }})
-    const response = await myworklogs.json();
-  
-     const Worklogs = response.worklogs;
-        // console.log(Worklogs);
-       // console.log(response.total)
-         /*   const worklogsData = response.worklogs.map(item => ({
-                id: item.id,
-                author: item.author,
-                description: item.comment,
-                timeSpent: item.timeSpentSeconds
-              }));
-            */
-        for (let i =0; i < Worklogs.length;i++) {
-        //console.log(Worklogs[i]['issueId']);
-        const work_logs = new worklogs({
-            issueId :Worklogs[i]['issueId'],
-            created :Worklogs[i]['issueId'],
-            updated :Worklogs[i]['updated'],
-            started :Worklogs[i]['started'],
-            timeSpent :Worklogs[i]['timeSpent'],
-            accountId :Worklogs[i]['author']['accountId'],
-        });
-        try{
-        work_logs.save();
-        }catch(err){
-            console.log(err);
-        }
-       /* console.log(Worklogs[i]['created']);
-        console.log(Worklogs[i]['updated']);
-        console.log(Worklogs[i]['started']);
-        console.log(Worklogs[i]['timeSpent']);
-        console.log(Worklogs[i]['author']['accountId']);*/
-    }
-         
-            }
-catch{
-    console.log(error);
-}
-
-}
-
 
 /** middleware for verify user */
 export async function verifyUser(req, res, next){
-  try {
-      
-      const { username } = req.method == "GET" ? req.query : req.body;
+    try {
+        
+        const { username } = req.method == "GET" ? req.query : req.body;
 
-      // check the user existance
-      let exist = await userModel.findOne({ username });
-      if(!exist) return res.status(404).send({ error : "Can't find User!"});
-      next();
+        // check the user existance
+        let exist = await UserModel.findOne({ username });
+        if(!exist) return res.status(404).send({ error : "Can't find User!"});
+        next();
 
-  } catch (error) {
-      return res.status(404).send({ error: "Authentication Error"});
-  }
+    } catch (error) {
+        return res.status(404).send({ error: "Authentication Error"});
+    }
 }
 
-export async function Register(req,res){
-  try {
-    const {username,password,email,profile} = req.body;
-    console.log("test");
-    console.log(req.body);
 
-    //check the existing of user
-    const existUsername = new Promise((resolve, reject) => {
-        userModel.findOne({ username }).then( (err, user) => {
-          if (err) { reject(new Error(err)); } 
-          else if (user) { reject({ error: "please use a unique username" });} 
-          else { resolve();}
-        });
-      });
+/** POST: http://localhost:8080/api/register 
+ * @param : {
+  "username" : "example123",
+  "password" : "admin123",
+  "email": "example@gmail.com",
+  "firstName" : "bill",
+  "lastName": "william",
+  "mobile": 8009860560,
+  "address" : "Apt. 556, Kulas Light, Gwenborough",
+  "profile": ""
+}
+*/
+export async function register(req,res){
 
-      //check the existing of Email
-      const existEmail = new Promise((resolve, reject) => {
-        userModel.findOne({ email }).then( (err, email) => {
-          if (err) { reject(new Error(err)); } 
-          else if (email) { reject({ error: "please use a unique email" });} 
-          else { resolve();}
-        });
-      });
+    try {
+        const { username, password, profile, email } = req.body;        
 
-     Promise.all([existUsername,existEmail]).then(()=>{
-        if(password){
-            bcrypt.hash(password,10)
-            .then(hashedPassword=>{
-                const user = new userModel({
-                    username,
-                    password : hashedPassword,
-                    profile : profile || '',
-                    email:email,
-                });
-                // return and save the result 
-                user.save()
-                .then(result => res.status(201).send({ msg: "User Register Successfully"}))
-                .catch(error =>{res.status(500).send({ error})
+        // check the existing user
+        const existUsername = new Promise((resolve, reject) => {
+            UserModel.findOne({ username }, function(err, user){
+                if(err) reject(new Error(err))
+                if(user) reject({ error : "Please use unique username"});
+
+                resolve();
             })
-            }).catch((error)=>{return res.status(500).send({error : "Enable to hash password"})})
-        }
-    }).catch((error)=>{return res.status(500).send({error})})
+        });
+
+        // check for existing email
+        const existEmail = new Promise((resolve, reject) => {
+            UserModel.findOne({ email }, function(err, email){
+                if(err) reject(new Error(err))
+                if(email) reject({ error : "Please use unique Email"});
+
+                resolve();
+            })
+        });
 
 
-}catch (error) {
-    return res.status(500).error;
-  }
+        Promise.all([existUsername, existEmail])
+            .then(() => {
+                if(password){
+                    bcrypt.hash(password, 10)
+                        .then( hashedPassword => {
+                            
+                            const user = new UserModel({
+                                username,
+                                password: hashedPassword,
+                                profile: profile || '',
+                                email
+                            });
+
+                            // return save result as a response
+                            user.save()
+                                .then(result => res.status(201).send({ msg: "User Register Successfully"}))
+                                .catch(error => res.status(500).send({error}))
+
+                        }).catch(error => {
+                            return res.status(500).send({
+                                error : "Enable to hashed password"
+                            })
+                        })
+                }
+            }).catch(error => {
+                return res.status(500).send({ error })
+            })
+
+
+    } catch (error) {
+        return res.status(500).send(error);
+    }
+
+
 }
 
-// post : http://localhost:8080/api/login
 
+/** POST: http://localhost:8080/api/login 
+ * @param: {
+  "username" : "example123",
+  "password" : "admin123"
+}
+*/
 export async function login(req,res){
+   
     const { username, password } = req.body;
 
     try {
         
-        userModel.findOne({ username })
+        UserModel.findOne({ username })
             .then(user => {
                 bcrypt.compare(password, user.password)
                     .then(passwordCheck => {
 
                         if(!passwordCheck) return res.status(400).send({ error: "Don't have Password"});
 
-                        // CREATING A JWT TOKEN
+                        // create jwt token
                         const token = jwt.sign({
-                            userId:user._id,
-                            username:user.username,
-                        },ENV.JWT_SECRET,{expiresIn:"24h"});
+                                        userId: user._id,
+                                        username : user.username
+                                    }, ENV.JWT_SECRET , { expiresIn : "24h"});
+
                         return res.status(200).send({
                             msg: "Login Successful...!",
                             username: user.username,
@@ -201,35 +142,33 @@ export async function login(req,res){
 }
 
 
+/** GET: http://localhost:8080/api/user/example123 */
+export async function getUser(req,res){
     
-  
+    const { username } = req.params;
 
-// get : http://localhost:8080/api/user/exampleofusername
+    try {
+        
+        if(!username) return res.status(501).send({ error: "Invalid Username"});
 
-    export async function getUser(req, res) {
-        const { username } = req.params;
-      
-        try {
-          if (!username) {
-            return res.status(501).send({ error: "Invalid Username" });
-          }
-      
-          const user = await userModel.findOne({ username });
-      
-          if (!user) {
-            return res.status(501).send({ error: "Couldn't Find the User" });
-          }
-      
-          /** remove password from user */
-          // mongoose return unnecessary data with object so convert it into json
-          const { password, ...rest } = Object.assign({}, user.toJSON());
-      
-          return res.status(201).send(rest);
-        } catch (error) {
-          console.error(error);
-          return res.status(500).send({ error: "Internal Server Error" });
-        }
-      }
+        UserModel.findOne({ username }, function(err, user){
+            if(err) return res.status(500).send({ err });
+            if(!user) return res.status(501).send({ error : "Couldn't Find the User"});
+
+            /** remove password from user */
+            // mongoose return unnecessary data with object so convert it into json
+            const { password, ...rest } = Object.assign({}, user.toJSON());
+
+            return res.status(201).send(rest);
+        })
+
+    } catch (error) {
+        return res.status(404).send({ error : "Cannot Find User Data"});
+    }
+
+}
+
+
 /** PUT: http://localhost:8080/api/updateuser 
  * @param: {
   "header" : "<token>"
@@ -240,46 +179,100 @@ body: {
     profile : ''
 }
 */
-export function updateuser(req, res) {
-    const userId = req.user;
-    console.log(userId);
-    if (userId) {
-      const body = req.body;
-  
-      // update the data
-      userModel.updateOne({ _id: userId }, body)
-        .then(() => {
-          return res.status(201).send({ msg: "Record Updated...!" });
-        })
-        .catch((error) => {
-          return res.status(401).send({ error: "User Not Found...!" });
-        });
-    } else {
-      return res.status(401).send({ error: "User Not Found...!" });
+export async function updateUser(req,res){
+    try {
+        
+        // const id = req.query.id;
+        const { userId } = req.user;
+
+        if(userId){
+            const body = req.body;
+
+            // update the data
+            UserModel.updateOne({ _id : userId }, body, function(err, data){
+                if(err) throw err;
+
+                return res.status(201).send({ msg : "Record Updated...!"});
+            })
+
+        }else{
+            return res.status(401).send({ error : "User Not Found...!"});
+        }
+
+    } catch (error) {
+        return res.status(401).send({ error });
     }
-  }  
-  
-// get : http://localhost:8080/api/generateOTP
+}
+
+
+/** GET: http://localhost:8080/api/generateOTP */
 export async function generateOTP(req,res){
-    
-    let OTP = await otpGenerator.generate(6,{lowerCaseAlphabets:false,upperCaseAlphabets:false,specialChars:false});
+    req.app.locals.OTP = await otpGenerator.generate(6, { lowerCaseAlphabets: false, upperCaseAlphabets: false, specialChars: false})
+    res.status(201).send({ code: req.app.locals.OTP })
+}
 
-    }            
 
-// get : http://localhost:8080/api/verifyOTP
+/** GET: http://localhost:8080/api/verifyOTP */
 export async function verifyOTP(req,res){
-    res.json('verifyOTP route')
-    } 
+    const { code } = req.query;
+    if(parseInt(req.app.locals.OTP) === parseInt(code)){
+        req.app.locals.OTP = null; // reset the OTP value
+        req.app.locals.resetSession = true; // start session for reset password
+        return res.status(201).send({ msg: 'Verify Successsfully!'})
+    }
+    return res.status(400).send({ error: "Invalid OTP"});
+}
 
-    //redirection when OTP is valid 
-// get : http://localhost:8080/api/createResetSession
+
+// successfully redirect user when OTP is valid
+/** GET: http://localhost:8080/api/createResetSession */
 export async function createResetSession(req,res){
-    res.json('createResetSession route')
-    } 
+   if(req.app.locals.resetSession){
+        return res.status(201).send({ flag : req.app.locals.resetSession})
+   }
+   return res.status(440).send({error : "Session expired!"})
+}
 
-// put : http://localhost:8080/api/resetPassword
+
+// update the password when we have valid session
+/** PUT: http://localhost:8080/api/resetPassword */
 export async function resetPassword(req,res){
-    res.json('resetPassword route')
-    }     
+    try {
+        
+        if(!req.app.locals.resetSession) return res.status(440).send({error : "Session expired!"});
 
-   
+        const { username, password } = req.body;
+
+        try {
+            
+            UserModel.findOne({ username})
+                .then(user => {
+                    bcrypt.hash(password, 10)
+                        .then(hashedPassword => {
+                            UserModel.updateOne({ username : user.username },
+                            { password: hashedPassword}, function(err, data){
+                                if(err) throw err;
+                                req.app.locals.resetSession = false; // reset session
+                                return res.status(201).send({ msg : "Record Updated...!"})
+                            });
+                        })
+                        .catch( e => {
+                            return res.status(500).send({
+                                error : "Enable to hashed password"
+                            })
+                        })
+                })
+                .catch(error => {
+                    return res.status(404).send({ error : "Username not Found"});
+                })
+
+        } catch (error) {
+            return res.status(500).send({ error })
+        }
+
+    } catch (error) {
+        return res.status(401).send({ error })
+    }
+}
+
+

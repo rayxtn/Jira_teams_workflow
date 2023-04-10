@@ -1,0 +1,37 @@
+body {
+    background-color: #fff;
+    background-image: radial-gradient(ellipse at bottom, #100f0f 0%, #060606 100%);
+    background-attachment: fixed;
+  }
+  
+  .glass {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(12px);
+    @apply w-[28%] h-[70vh] py-16 px-6 rounded-3xl min-w-max;
+  }
+  
+  .profile_img {
+    @apply w-[120px] rounded-full shadow-lg cursor-pointer;
+    @apply hover:shadow-2xl transition-all duration-300;
+  }
+  
+  .textbox {
+    @apply border-2 border-gray-300 px-4 py-3 rounded-lg w-full shadow-sm text-base;
+    @apply focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500;
+  }
+  
+  .btn {
+    @apply bg-blue-500 w-full md:w-[70%] py-3.5 rounded-lg text-gray-50 text-base shadow-sm text-center transition-all duration-300 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500;
+  }
+  
+  .btn:hover {
+    background-color: #3B82F6;
+  }
+  
+  input[type='file'] {
+    display: none;
+  }
+  
