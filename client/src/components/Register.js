@@ -52,7 +52,7 @@ export default function Register() {
         <div className={styles.glass} style={{ width: "45%", paddingTop: '3em'}}>
 
           <div className="title flex flex-col items-center">
-            <h4 className='text-5xl font-bold'>Sign up</h4>
+            <h6 className='text-5xl font-bold'>Sign up</h6>
             <span className='py-4 text-xl w-2/3 text-center text-gray-500'>
             Welcome ! please login or sign up. 
             </span>

@@ -5,6 +5,7 @@ const router = Router();
 import * as controller from '../controllers/appController.js';
 import { registerMail } from '../controllers/mailer.js'
 import Auth, { localVariables } from '../middleware/auth.js';
+import * as jiraController from '../controllers/JiraapiController.js';
 
 
 
@@ -15,6 +16,7 @@ router.route('/authenticate').post(controller.verifyUser, (req, res) => res.end(
 router.route('/login').post(controller.verifyUser,controller.login); // login in app
 
 /** GET Methods */
+router.route('/issues').get(jiraController.getallIssues)
 router.route('/user/:username').get(controller.getUser) // user with username
 router.route('/generateOTP').get(controller.verifyUser, localVariables, controller.generateOTP) // generate random OTP
 router.route('/verifyOTP').get(controller.verifyUser, controller.verifyOTP) // verify generated OTP

@@ -1,5 +1,4 @@
 // using the 'node-fetch' library:
-import worklogs from "../model/worklogs.model.js"
 import fetch from 'node-fetch';
 import  express  from 'express';
 import cors from 'cors';
@@ -8,47 +7,57 @@ const app = express()
 
 app.use(cors())
 
-app.get('/worklog/:issueIdOrKey', (req, res) => {
-  const id = req.params.issueIdOrKey;
-  const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/issue/${id}/worklog`
-  const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF032Dix_N3BkCIX-3mDVULlTmoFcYd9rZBFofjcHiejr15TJzbQD-NgRiHdzrwww5udeSDQHyup8oQwDCsd1QYi6C2ybxxU5AcKngynIA3o-X-Sbf-Cdjn2edrnyh8jiH1O3yh2FRbmDg5Vcc9Gei4L7JFZKoMXh5Aq4BsuEhqt3w=5735F2F9').toString('base64')}`
-  fetch(jiraApiUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' }})
-    .then(response => response.text())
-    .then(text => {
-      const resp = JSON.parse(text)
-      const processedData = resp.worklogs.map(item => ({
-        id: item.id,
-        author: item.author,
-        description: item.comment,
-        timeSpent: item.timeSpentSeconds
-      }))
-      res.send({ worklogData: processedData })
-      console.log(processedData.item.author);
-    })
-    .catch(err => {
-      console.log(err)
-      res.status(500).send({ message: 'Error fetching worklog data' })
-    })
-})
+const express = require('express');
+const router = express.Router();
+const { Client } = require('@microsoft/microsoft-graph-client');
 
-/*app.get('/teamsData/:groupId', (req, res) => {
-  const id = req.params.groupId
+// Microsoft Teams credentials
+const clientId = '<your_client_id>';
+const clientSecret = '<your_client_secret>';
+const tenantId = '<your_tenant_id>';
 
-  const teamsApi = `https://graph.microsoft.com/v1.0/planner/plans/${id}/tasks`
-  const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:').toString('base64')}`
-  fetch(teamsApi, { method: 'GET', headers: { 'Authorization': authHeader }})
-    .then(response => response.text())
-    .then(text => {
-      const resp = JSON.parse(text)
-      const processedData = resp.data.map(item => ({
-       ...item
-      }))
-      res.send({ teamsData: processedData })
-    })
-    .catch(err => { 
-      console.log(err)
-      res.status(500).send({ message: 'Error fetching worklog data' })
-    })
+// Endpoint to get all tasks and plans from Microsoft Teams
+router.get('/tasks', async (req, res) => {
+  try {
+    // Authenticate with Microsoft Graph API
+    const client = await getClient();
 
-}) */
+    // Get all tasks
+    const tasks = await client
+      .api('/teams/{team-id}/tasks')
+      .get();
+
+    // Get all plans
+    const plans = await client
+      .api('/planner/plans')
+      .get();
+
+    // Combine tasks and plans
+    const tasksWithPlans = tasks.value.map(task => {
+      const plan = plans.value.find(plan => plan.id === task.planId);
+      return { ...task, plan };
+    });
+
+    res.status(200).json(tasksWithPlans);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Function to authenticate with Microsoft Graph API
+async function getClient() {
+  const client = Client.init({
+    authProvider: (done) => {
+      done(null, {
+        accessToken: '<your_access_token>',
+        tokenType: 'Bearer'
+      });
+    }
+  });
+
+  return client;
+}
+
+
 

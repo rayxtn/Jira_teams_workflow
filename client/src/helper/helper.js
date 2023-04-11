@@ -6,6 +6,18 @@ axios.defaults.baseURL = process.env.REACT_APP_SERVER_DOMAIN;
 
 /** Make API Requests */
 
+/** get Woklogs details */
+export async function getWorklogs({ IssueId }){
+    try {
+        const { data } = await axios.get(`http://localhost:8080/api/getWorklogs/${IssueId}`);
+        return { data };
+    } catch (error) {
+        return { error : "Worklogs doesn't exist...!"}
+    }
+}
+
+
+
 
 /** To get username from Token */
 export async function getUsername(){

@@ -10,7 +10,8 @@ import Profile from './components/Profile';
 import Recovery from './components/Recovery';
 import Reset from './components/Reset';
 import PageNotFound from './components/PageNotFound';
-
+//import  Worklogs  from '../../server/controllers/jirapiController';
+//import Plans from '../../server/controllers/teamsapiController';
 
 /** auth middleware */
 import { AuthorizeUser, ProtectRoute } from './middleware/auth'
@@ -41,10 +42,12 @@ const router = createBrowserRouter([
         path : '/reset',
         element : <Reset></Reset>
     },
+  // do not forget to add worklogs and plans paths here
     {
         path : '*',
         element : <PageNotFound></PageNotFound>
-    },
+    }
+   
 ])
 
 export default function App() {

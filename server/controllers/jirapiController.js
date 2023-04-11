@@ -1,21 +1,32 @@
+import IssueModel from '../model/User.model.js'
+
+
 //GET ALL ISSUES FROM THE PROJECT 
 
 // DEFINE THE PROJECT ID BEFORE POSTING
 
 
-export async function getallIssues(){
+export async function getallIssues(req,res){
   try{
       const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=DIN&maxResults=1000`
       const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF0HYsCEFOiZ7PsFk8ex7P7PL65cgCPuiUwMzcR_05BcW3tLT-WIv2_fielw_sBNBV3yCSp6xxkkqhnYjN5EzQjYkoLiDS3R7L_zC-UleRlLtoL1AN067ZTJRXjdDttgoWmgFcxPhaX_90UWLKXq3rQobBOSkhcYHnx8rUjNK4fNQk=98FC84D9').toString('base64')}`          
       const myProjectIssues = await fetch(jiraApiUrl , {headers: { 'Authorization': authHeader, 'Accept': 'application/json' }})
-      const response = await myProjectIssues.json();
-       const allIssues = response;
+      const res = await myProjectIssues.json();
+       const allIssues = res;
          console.log(allIssues.total);
          const issuesData = allIssues.issues;
           for (let i =0; i < issuesData.length;i++) {
-          console.log(issuesData[i]['id']); }
+            const issues = new IssueModel({
+              issueid : issuesData[i]['id']
+          });
 
-                          }catch{
+          // return save result as a response
+          issues.save()
+              .then(result => res.status(201).send({ msg: "Issues Added to db Successfully"}))
+              .catch(error => res.status(500).send({error}))
+          //console.log(issuesData[i]['id']); 
+        }
+       }catch{
       console.log(error);
   }
   
