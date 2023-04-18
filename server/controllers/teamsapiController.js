@@ -12,14 +12,16 @@ const router = express.Router();
 const { Client } = require('@microsoft/microsoft-graph-client');
 
 // Microsoft Teams credentials
-const clientId = '<your_client_id>';
-const clientSecret = '<your_client_secret>';
-const tenantId = '<your_tenant_id>';
+
+//const clientId = '<>';
+//const clientSecret = '<>';
+
 
 // Endpoint to get all tasks and plans from Microsoft Teams
-router.get('/tasks', async (req, res) => {
+router.get('/tasks', async (req, res) => 
+{
   try {
-    // Authenticate with Microsoft Graph API
+    // using Microsoft Graph API
     const client = await getClient();
 
     // Get all tasks
@@ -46,18 +48,18 @@ router.get('/tasks', async (req, res) => {
 });
 
 // Function to authenticate with Microsoft Graph API
-async function getClient() {
-  const client = Client.init({
-    authProvider: (done) => {
-      done(null, {
-        accessToken: '<your_access_token>',
-        tokenType: 'Bearer'
-      });
-    }
-  });
+//async function getClient() {
+  //const client = Client.init({
+    //authProvider: (done) => {
+    //  done(null, {
+    //    accessToken: '<>',
+     //   tokenType: 'Bearer'
+    //  });
+  //  }
+ // });
 
-  return client;
-}
+//  return client;
+//}
 
 
 

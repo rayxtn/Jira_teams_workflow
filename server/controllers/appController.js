@@ -1,8 +1,81 @@
-import UserModel from '../model/User.model.js'
+import UserModel from '../model/User.model.js';
+import worklogsModel from '../model/worklogs.model.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import ENV from '../config.js'
 import otpGenerator from 'otp-generator';
+import fetch from 'node-fetch';
+
+
+export async function getallIssues(req,res){
+    try{
+        const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=DIN&maxResults=1000`
+        const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF0GdBHChr_dJvNyjK3w_HiHP7KO4DSMgl7rPZ4bJjAxSrt9b5zrTdRpYVyyJRwuZ55EJoD7HCjf7vGpg0lxJSpw3JqUd65mAQ60N8m3T9fEFIIRVVeyXIEXbj9PcBLOIbBRu3sJ6oQM6gPF9k8uiLDqAUCxWgwb4uKS3a7fvC33VE=B1F7E823').toString('base64')}`          
+        const myProjectIssues = await fetch(jiraApiUrl , {headers: { 'Authorization': authHeader, 'Accept': 'application/json' }})
+     console.log(myProjectIssues);
+    }catch{
+    console.log("FAILED TO CONNECT !");
+  }
+     
+    }
+
+
+//GET WORKLOGS
+
+export async function worklogs(){
+    try{
+      const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/issue/DIN-25/worklog`
+      const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF0GdBHChr_dJvNyjK3w_HiHP7KO4DSMgl7rPZ4bJjAxSrt9b5zrTdRpYVyyJRwuZ55EJoD7HCjf7vGpg0lxJSpw3JqUd65mAQ60N8m3T9fEFIIRVVeyXIEXbj9PcBLOIbBRu3sJ6oQM6gPF9k8uiLDqAUCxWgwb4uKS3a7fvC33VE=B1F7E823').toString('base64')}`          
+      const myworklogs = await fetch(jiraApiUrl , {headers: { 'Authorization': authHeader, 'Accept': 'application/json' }})
+      const response = await myworklogs.json();
+    
+       const Worklogs = response.worklogs;
+          // console.log(Worklogs);
+         // console.log(response.total)
+           /*   const worklogsData = response.worklogs.map(item => ({
+                  id: item.id,
+                  author: item.author,
+                  description: item.comment,
+                  timeSpent: item.timeSpentSeconds
+                }));
+              */
+          for (let i =0; i < Worklogs.length;i++) {
+          //console.log(Worklogs[i]['issueId']);
+          const Worklogs = new worklogsModel({
+              issueId :Worklogs[i]['issueId'],
+              created :Worklogs[i]['issueId'],
+              updated :Worklogs[i]['updated'],
+              started :Worklogs[i]['started'],
+              timeSpent :Worklogs[i]['timeSpent'],
+              accountId :Worklogs[i]['author']['accountId'],
+          });
+          try{
+            Worklogs.save();
+          }catch(err){
+              console.log(err);
+          }
+         /* console.log(Worklogs[i]['created']);
+          console.log(Worklogs[i]['updated']);
+          console.log(Worklogs[i]['started']);
+          console.log(Worklogs[i]['timeSpent']);
+          console.log(Worklogs[i]['author']['accountId']);*/
+      }
+           
+              }
+    catch{
+      console.log(error);
+    }
+    
+    }
+    
+
+
+
+
+
+
+
+
 
 /** middleware for verify user */
 export async function verifyUser(req, res, next){
