@@ -4,7 +4,6 @@ import { getUsername } from '../helper/helper'
 
 axios.defaults.baseURL = process.env.REACT_APP_SERVER_DOMAIN;
 
-
 /** custom hook */
 export default function useFetch(query){
     const [getData, setData] = useState({ isLoading : false, apiData: undefined, status: null, serverError: null })
@@ -23,7 +22,6 @@ export default function useFetch(query){
                     setData(prev => ({ ...prev, isLoading: false}));
                     setData(prev => ({ ...prev, apiData : data, status: status }));
                 }
-
                 setData(prev => ({ ...prev, isLoading: false}));
             } catch (error) {
                 setData(prev => ({ ...prev, isLoading: false, serverError: error }))

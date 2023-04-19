@@ -14,7 +14,7 @@ router.route('/authenticate').post(controller.verifyUser, (req, res) => res.end(
 router.route('/login').post(controller.verifyUser,controller.login); // login in app
 
 /** GET Methods */
-router.route('/issues').get(controller.getallIssues)
+router.route('/issues').get(controller.getIssues)
 router.route('/worklogs').get(controller.worklogs)
 router.route('/user/:username').get(controller.getUser) // user with username
 router.route('/generateOTP').get(controller.verifyUser, localVariables, controller.generateOTP) // generate random OTP

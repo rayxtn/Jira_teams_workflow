@@ -32,7 +32,6 @@ export default function Profile() {
     onSubmit : async values => {
       values = await Object.assign(values, { profile : file || apiData?.profile || ''})
       let updatePromise = updateUser(values);
-
       toast.promise(updatePromise, {
         loading: 'Updating...',
         success : <b>Update Successfully...!</b>,

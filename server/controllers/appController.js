@@ -3,15 +3,16 @@ import worklogsModel from '../model/worklogs.model.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import ENV from '../config.js'
+import JIRA_TOKEN from '../config.js';
 import otpGenerator from 'otp-generator';
 import fetch from 'node-fetch';
 
 
-export async function getallIssues(req,res){
+export async function getIssues(){
     try{
         const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=DIN&maxResults=1000`
-        const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF0GdBHChr_dJvNyjK3w_HiHP7KO4DSMgl7rPZ4bJjAxSrt9b5zrTdRpYVyyJRwuZ55EJoD7HCjf7vGpg0lxJSpw3JqUd65mAQ60N8m3T9fEFIIRVVeyXIEXbj9PcBLOIbBRu3sJ6oQM6gPF9k8uiLDqAUCxWgwb4uKS3a7fvC33VE=B1F7E823').toString('base64')}`          
-        const myProjectIssues = await fetch(jiraApiUrl , {headers: { 'Authorization': authHeader, 'Accept': 'application/json' }})
+        const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:JIRA_TOKEN').toString('base64')}`          
+        const myProjectIssues = await fetch(jiraApiUrl , {method:'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' }})
      console.log(myProjectIssues);
     }catch{
     console.log("FAILED TO CONNECT !");
@@ -25,11 +26,12 @@ export async function getallIssues(req,res){
 export async function worklogs(){
     try{
       const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/issue/DIN-25/worklog`
-      const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF0GdBHChr_dJvNyjK3w_HiHP7KO4DSMgl7rPZ4bJjAxSrt9b5zrTdRpYVyyJRwuZ55EJoD7HCjf7vGpg0lxJSpw3JqUd65mAQ60N8m3T9fEFIIRVVeyXIEXbj9PcBLOIbBRu3sJ6oQM6gPF9k8uiLDqAUCxWgwb4uKS3a7fvC33VE=B1F7E823').toString('base64')}`          
-      const myworklogs = await fetch(jiraApiUrl , {headers: { 'Authorization': authHeader, 'Accept': 'application/json' }})
+      const authHeader = `Basic ${Buffer.from(JIRA_TOKEN).toString('base64')}`          
+      const myworklogs = await fetch(jiraApiUrl , {method:'GET',headers: { 'Authorization': authHeader, 'Accept': 'application/json' }})
       const response = await myworklogs.json();
     
        const Worklogs = response.worklogs;
+       console.log(Worklogs);
           // console.log(Worklogs);
          // console.log(response.total)
            /*   const worklogsData = response.worklogs.map(item => ({
