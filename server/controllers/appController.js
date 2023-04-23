@@ -11,27 +11,42 @@ import fetch from 'node-fetch';
 export async function getIssues(){
     try{
         const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=DIN&maxResults=1000`
-        const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:JIRA_TOKEN').toString('base64')}`          
-        const myProjectIssues = await fetch(jiraApiUrl , {method:'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' }})
-     console.log(myProjectIssues);
+        const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`          
+        const response = await fetch(jiraApiUrl , {method:'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' }})
+      const issuesData = await response.json();
+
+      const data = issuesData.issues;
+      const issuesArray =[];
+      for(let i=0;i<data.length;i++) {
+        const issueid= data[i]['id'];
+      
+      issuesArray[i]=data[i]['id'];
+      
+      }
+      return issuesArray;
+
     }catch{
     console.log("FAILED TO CONNECT !");
-  }
-     
+  }  
     }
+
+   
 
 
 //GET WORKLOGS
 
 export async function worklogs(){
     try{
-      const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/issue/DIN-25/worklog`
-      const authHeader = `Basic ${Buffer.from(JIRA_TOKEN).toString('base64')}`          
-      const myworklogs = await fetch(jiraApiUrl , {method:'GET',headers: { 'Authorization': authHeader, 'Accept': 'application/json' }})
-      const response = await myworklogs.json();
-    
-       const Worklogs = response.worklogs;
-       console.log(Worklogs);
+       let issues = await getIssues();
+       console.log(issues);
+       
+     // const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/issue/DIN-25/worklog`
+     // const authHeader = `Basic ${Buffer.from(JIRA_TOKEN).toString('base64')}`          
+      //const myworklogs = await fetch(jiraApiUrl , {method:'GET',headers: { 'Authorization': authHeader, 'Accept': 'application/json' }})
+      //const response = await myworklogs.json();
+       
+       //const Worklogs = response.worklogs;
+
           // console.log(Worklogs);
          // console.log(response.total)
            /*   const worklogsData = response.worklogs.map(item => ({
@@ -41,9 +56,9 @@ export async function worklogs(){
                   timeSpent: item.timeSpentSeconds
                 }));
               */
-          for (let i =0; i < Worklogs.length;i++) {
+         // for (let i =0; i < Worklogs.length;i++) {
           //console.log(Worklogs[i]['issueId']);
-          const Worklogs = new worklogsModel({
+         /* const Worklogs = new worklogsModel({
               issueId :Worklogs[i]['issueId'],
               created :Worklogs[i]['issueId'],
               updated :Worklogs[i]['updated'],
@@ -55,13 +70,13 @@ export async function worklogs(){
             Worklogs.save();
           }catch(err){
               console.log(err);
-          }
+          }*/
          /* console.log(Worklogs[i]['created']);
           console.log(Worklogs[i]['updated']);
           console.log(Worklogs[i]['started']);
           console.log(Worklogs[i]['timeSpent']);
           console.log(Worklogs[i]['author']['accountId']);*/
-      }
+      
            
               }
     catch{
