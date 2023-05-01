@@ -14,6 +14,7 @@ router.route('/authenticate').post(controller.verifyUser, (req, res) => res.end(
 router.route('/login').post(controller.verifyUser,controller.login); // login in app
 
 /** GET Methods */
+router.route('/teams').get(controller.connectMS)
 router.route('/issues').get(controller.getIssues)
 router.route('/worklogs').get(controller.worklogs)
 router.route('/user/:username').get(controller.getUser) // user with username

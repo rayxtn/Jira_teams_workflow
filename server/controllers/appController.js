@@ -6,6 +6,12 @@ import ENV from '../config.js'
 import JIRA_TOKEN from '../config.js';
 import otpGenerator from 'otp-generator';
 import fetch from 'node-fetch';
+import msal from '@azure/msal-node';
+import axios from 'axios';
+import { Client } from '@microsoft/microsoft-graph-client';
+import 'isomorphic-fetch'; 
+import qs from 'qs';
+
 
 
 export async function getIssues(){
@@ -30,7 +36,79 @@ export async function getIssues(){
   }  
     }
 
-   
+export async function connectMS(request,response){
+        try {
+            /*const config = {
+                auth: {
+                    clientId: 'dd6e0032-4b24-4b5f-9cfa-eeaa0aa1b493',
+                    authority: 'https://login.microsoftonline.com/7ecf1dcb-eca3-4727-8201-49cf4c94b669',
+                    clientSecret: 'Z.78Q~_TMBAM8SV3OVmEaa7VV4w9TkzqJbIo0aWu',
+                    redirectUri:'http://localhost:8080/api/teams'
+                }
+            };*/
+            // Set your app credentials and desired permissions
+            let data = qs.stringify({
+              'grant_type': 'client_credentials',
+              'client_id': 'dd6e0032-4b24-4b5f-9cfa-eeaa0aa1b493',
+              'state': '12345',
+              'scope': 'https://graph.microsoft.com/.default',
+              'client_secret': 'Z.78Q~_TMBAM8SV3OVmEaa7VV4w9TkzqJbIo0aWu',
+              '': '' 
+            });
+            let config = {
+              method: 'post',
+              maxBodyLength: Infinity,
+              url: 'https://login.microsoftonline.com/7ecf1dcb-eca3-4727-8201-49cf4c94b669/oauth2/v2.0/token',
+              headers: { 
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              data : data
+            };
+            axios.request(config)
+            .then((response) => {
+              const jsontoken=  JSON.stringify(response.data.access_token);
+              //console.log(JSON.stringify(response.data));
+              console.log(jsontoken);
+              const str = jsontoken;
+              const trimmedStr = str.replace(/^"(.*)"$/, '$1');
+
+              console.log(trimmedStr); // Output: example string
+            let config = {
+                method: 'get',
+                maxBodyLength: Infinity,
+                url: 'https://graph.microsoft.com/users/',
+                headers: {            
+                  'MS-APP-ACTS-AS': 'raed.houimli@avaxia-group.com',          
+                  'Authorization': 'Bearer' +" " +    trimmedStr
+                }
+              };
+            ;
+              axios.request(config)
+.then((response) => {
+  console.log(JSON.stringify(response.data));
+})
+.catch((error) => {
+  console.log(error);
+});
+
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+
+              
+
+
+
+
+        }catch(error) {
+            console.log(error);
+        }  
+
+
+
+}
+        
 
 
 //GET WORKLOGS
