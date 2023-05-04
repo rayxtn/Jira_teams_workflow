@@ -19,23 +19,59 @@ export async function getIssues(){
         const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=DIN&maxResults=1000`
         const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`          
         const response = await fetch(jiraApiUrl , {method:'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' }})
-      const issuesData = await response.json();
+        const issuesData = await response.json();
+      
+        const issues = issuesData.issues;
 
-      const data = issuesData.issues;
-      const issuesArray =[];
-      for(let i=0;i<data.length;i++) {
-        const issueid= data[i]['id'];
+
+      const assigneeIssues = {};
+    for (const issue of issues) {
+      const issueId = issue.id;
+      const assignee = issue.fields.assignee;
+      const assigneeEmail = assignee ? assignee.emailAddress : 'Unassigned';
+      const assigneeName = assignee ? assignee.displayName : 'Unassigned';
+
+      // Retrieve worklogs for each issue
+
+      const worklogsUrl = 'https://avaxia.atlassian.net/rest/api/3/issue/'+ issueId +'/worklog';
+      const worklogsResponse = await fetch(worklogsUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' } });
+      const worklogsData = await worklogsResponse.json();
+      const worklogs = worklogsData.worklogs;
+
+      // Group issues and worklogs by assignee email
       
-      issuesArray[i]=data[i]['id'];
-      
+      if (!assigneeIssues[assigneeEmail]) {
+        assigneeIssues[assigneeEmail] = {
+          'Assignee Name': assigneeName,
+          'Issues': {},
+        };
       }
-      return issuesArray;
 
-    }catch{
-    console.log("FAILED TO CONNECT !");
-  }  
+      assigneeIssues[assigneeEmail]['Issues'][issueId] = {
+        'Issue Key': issue.key,
+        'Summary': issue.fields.summary,
+        'Worklogs': worklogs,
+      };
     }
+    //console.log(assigneeIssues);
+   
 
+    const assigneeIssuesJSON = (JSON.stringify(assigneeIssues));
+    return (assigneeIssuesJSON);
+   
+    
+    
+  } catch {
+    console.log('FAILED TO CONNECT!');
+  }
+}
+  
+  
+  
+  
+  
+  
+  
 export async function connectMS(request,response){
         try {
             /*const config = {
@@ -76,7 +112,7 @@ export async function connectMS(request,response){
             let config = {
                 method: 'get',
                 maxBodyLength: Infinity,
-                url: 'https://graph.microsoft.com/users/',
+                url: 'https://graph.microsoft.com/v1.0/',
                 headers: {            
                   'MS-APP-ACTS-AS': 'raed.houimli@avaxia-group.com',          
                   'Authorization': 'Bearer' +" " +    trimmedStr

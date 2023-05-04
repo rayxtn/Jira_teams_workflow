@@ -1,28 +1,46 @@
-import React from "react";
-import styles from '../styles/Username.module.css'
-//import toast, { Toaster } from 'react-hot-toast';
-//  <Toaster position='top-center' reverseOrder={false}></Toaster>
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
-export default function Worklogs() {
+function Worklogs() {
+  const [issues, setIssues] = useState([]);
+  try{
+  useEffect(() => {
+    
+    const fetchData = async () => {
+      const issues = await axios.get('http://localhost:8080/api/issues');
+      console.log(issues);
+      const data = await issues.json();
+      setIssues(data);
+        
+
+    };
+
+  fetchData(); 
+  }, []);
+
+}catch(error){
+  console.log(error);
+
+}
   return (
-    <div className="container mx-auto">
-      <div className='flex justify-center items-center h-screen'>
-          <div className="title flex flex-col items-center">
-          <h4 className='text-5xl font-bold'>Project Name</h4>
-          <h4 className='text-5xl font-bold'>Getting the Issues from the project</h4>
-            <h4 className='text-5xl font-bold'>Getting the Worklogs from the issue</h4>
-          </div>
-          <form className='py-20'>
-              <div className="textbox flex flex-col items-center gap-6">
-                  <button className={styles.btn} type='submit'>Get Issues</button>
-                  <button className={styles.btn} type='submit'>Get Worklogs</button>
-              </div>
-
-          </form>
-
+    <div>
+      {Object.entries(issues).map(([email, data]) => (
+        <div key={email}>
+          <h3>{data['Assignee Name']}</h3>
+          {Object.entries(data.Issues).map(([id, issue]) => (
+            <div key={id}>
+              <p><strong>{issue['Issue Key']}</strong>: {issue.Summary}</p>
+              <ul>
+                {issue.Worklogs.map((worklog) => (
+                  <li key={worklog.id}>{worklog.comment}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-      </div>
-  )
+      ))}
+    </div>
+  );
 }
 
-
+export default Worklogs;

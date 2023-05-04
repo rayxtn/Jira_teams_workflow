@@ -9,15 +9,19 @@ import Register from './components/Register';
 import Profile from './components/Profile';
 import Recovery from './components/Recovery';
 import Reset from './components/Reset';
+import Worklogs from './components/Worklogs';
 import PageNotFound from './components/PageNotFound';
+
 //import  Worklogs  from '../../server/controllers/jirapiController';
 //import Plans from '../../server/controllers/teamsapiController';
 
 /** auth middleware */
 import { AuthorizeUser, ProtectRoute } from './middleware/auth'
 
+
 /** root routes */
 const router = createBrowserRouter([
+
     {
         path : '/',
         element : <Username></Username>
@@ -42,11 +46,16 @@ const router = createBrowserRouter([
         path : '/reset',
         element : <Reset></Reset>
     },
+    {
+        path : '/workflow',
+        element :<Worklogs></Worklogs>
+    },
   // do not forget to add worklogs and plans paths here
     {
         path : '*',
         element : <PageNotFound></PageNotFound>
-    }
+    },
+
    
 ])
 
