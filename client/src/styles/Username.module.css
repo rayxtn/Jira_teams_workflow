@@ -1,37 +1,114 @@
-body {
-    background-color: #fff;
-    background-image: radial-gradient(ellipse at bottom, #353030 0%, #292626 100%);
-    background-attachment: fixed;
-  }
-  
-  .glass {
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(12px);
-    @apply w-[28%] h-[70vh] py-16 px-6 rounded-3xl min-w-max;
-  }
-  
-  .profile_img {
-    @apply w-[120px] rounded-full shadow-lg cursor-pointer;
-    @apply hover:shadow-2xl transition-all duration-300;
-  }
-  
-  .textbox {
-    @apply border-2 border-gray-300 px-4 py-3 rounded-lg w-full shadow-sm text-base;
-    @apply focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500;
-  }
-  
-  .btn {
-    @apply bg-blue-500 w-full md:w-[70%] py-3.5 rounded-lg text-gray-50 text-base shadow-sm text-center transition-all duration-300 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500;
-  }
-  
-  .btn:hover {
-    background-color: #3B82F6;
-  }
-  
-  input[type='file'] {
-    display: none;
-  }
-  
+/* Add this CSS to the "Login.css" file */
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f3f3f3;
+}
+
+.glass {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  padding: 2em;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  width: 45%;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 1em;
+}
+
+.title h6 {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #333333;
+}
+
+.title span {
+  font-size: 1.25rem;
+  color: #777777;
+}
+
+.profile {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1em;
+}
+
+.profile_img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #dddddd;
+  transition: border-color 0.3s ease;
+}
+
+.profile_img:hover {
+  border-color: #aaaaaa;
+  transform: scale(1.1);
+}
+
+.textbox {
+  padding: 0.5em 1em;
+  border-radius: 5px;
+  border: 1px solid #cccccc;
+  font-size: 0.9rem;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.3s ease;
+}
+
+.textbox:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 5px rgba(79, 70, 229, 0.5);
+}
+
+.btn {
+  padding: 0.5em 1em;
+  background-color: #e74c3c;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  width: 100%;
+}
+
+.btn:hover {
+  background-color: #c0392b;
+  transform: scale(1.05);
+}
+
+.btn:active {
+  background-color: #d35400;
+}
+
+.text-center {
+  text-align: center;
+  margin-top: 1em;
+}
+
+.text-gray-500 {
+  color: #999999;
+}
+
+.text-red-500 {
+  color: #e74c3c;
+}
+
+.py-1 {
+  padding-top: 1em;
+  padding-bottom: 1em;
+}
+
+.py-4 {
+  padding-top: 2em;
+  padding-bottom: 2em;
+}

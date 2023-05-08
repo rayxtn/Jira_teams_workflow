@@ -14,7 +14,8 @@ import qs from 'qs';
 
 
 
-export async function getIssues(){
+export async function getIssues(req, res){
+    
     try{
         const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=DIN&maxResults=1000`
         const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`          
@@ -57,7 +58,7 @@ export async function getIssues(){
    
 
     const assigneeIssuesJSON = (JSON.stringify(assigneeIssues));
-    return (assigneeIssuesJSON);
+    return res.send(assigneeIssuesJSON);
    
     
     
@@ -85,10 +86,10 @@ export async function connectMS(request,response){
             // Set your app credentials and desired permissions
             let data = qs.stringify({
               'grant_type': 'client_credentials',
-              'client_id': 'dd6e0032-4b24-4b5f-9cfa-eeaa0aa1b493',
+              'client_id': 'd9452d4b-7b90-49cb-96a9-dbd03bbbc1ec',
               'state': '12345',
               'scope': 'https://graph.microsoft.com/.default',
-              'client_secret': 'Z.78Q~_TMBAM8SV3OVmEaa7VV4w9TkzqJbIo0aWu',
+              'client_secret': 'uo6k~B1F.2_yA~O5Mqf5rLMCP0KgXS14_Y',
               '': '' 
             });
             let config = {
@@ -112,9 +113,9 @@ export async function connectMS(request,response){
             let config = {
                 method: 'get',
                 maxBodyLength: Infinity,
-                url: 'https://graph.microsoft.com/v1.0/',
+                url: 'https://graph.microsoft.com/v1.0/teams/d9f935aa-0d31-403d-9d4f-33728253b85a/schedule/shifts',
                 headers: {            
-                  'MS-APP-ACTS-AS': 'raed.houimli@avaxia-group.com',          
+                  'MS-APP-ACTS-AS': 'nassim.jloud@avaxia-group.com',          
                   'Authorization': 'Bearer' +" " +    trimmedStr
                 }
               };

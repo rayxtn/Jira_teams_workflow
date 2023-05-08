@@ -1,12 +1,107 @@
+/* Add this CSS to the "Login.css" file */
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f3f3f3;
+}
+
 .glass {
-    @apply h-5/6 w-5/6 shadow-lg rounded-lg;
-  }
-  
-  .profile_img {
-    @apply w-40 cursor-pointer transition duration-500 ease-in-out transform hover:-translate-y-1 hover:scale-110;
-  }
-  
-  .textbox {
-    @apply w-3/4  rounded-full p-3;
-  }
-  
+  @apply h-5/6 w-5/6 shadow-lg rounded-lg;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 2em;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 1em;
+}
+
+.title h6 {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #333333;
+}
+
+.title span {
+  font-size: 1.25rem;
+  color: #777777;
+}
+
+.profile {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1em;
+}
+
+.profile_img {
+  @apply w-40 cursor-pointer transition duration-500 ease-in-out transform hover:-translate-y-1 hover:scale-110;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 2px solid #dddddd;
+}
+
+.textbox {
+  @apply w-3/4 rounded-full p-3;
+  padding: 0.5em 1em;
+  border-radius: 5px;
+  border: 1px solid #cccccc;
+  font-size: 0.9rem;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.3s ease;
+}
+
+.textbox:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 5px rgba(79, 70, 229, 0.5);
+}
+
+.btn {
+  padding: 0.5em 1em;
+  background-color: #e74c3c;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  width: 100%;
+}
+
+.btn:hover {
+  background-color: #c0392b;
+  transform: scale(1.05);
+}
+
+.btn:active {
+  background-color: #d35400;
+}
+
+.text-center {
+  text-align: center;
+  margin-top: 1em;
+}
+
+.text-gray-500 {
+  color: #999999;
+}
+
+.text-red-500 {
+  color: #e74c3c;
+}
+
+.py-1 {
+  padding-top: 1em;
+  padding-bottom: 1em;
+}
+
+.py-4 {
+  padding-top: 2em;
+  padding-bottom: 2em;
+}
