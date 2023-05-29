@@ -1,5 +1,5 @@
 import UserModel from '../model/User.model.js';
-import worklogsModel from '../model/worklogs.model.js';
+import AssigneeIssues from '../model/worklogs.model.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import ENV from '../config.js'
@@ -9,7 +9,6 @@ import fetch from 'node-fetch';
 import msal from '@azure/msal-node';
 import axios from 'axios';
 import { Client } from '@microsoft/microsoft-graph-client';
-import 'isomorphic-fetch'; 
 import qs from 'qs';
 
 
@@ -55,12 +54,34 @@ export async function getIssues(req, res){
       };
     }
     //console.log(assigneeIssues);
+    
+
+
+    const assigneeIssue = {};
+
+    for (const issue of issues) {
+      // Retrieve and process each issue
+      // ...
+
+      assigneeIssue[assigneeEmail]['Issues'][issue] = {
+        'Issue Key': issue.key,
+        Summary: issue.fields.summary,
+        Worklogs: worklogs,
+      };
+    }
+
+    // Create an instance of AssigneeIssues and populate it with the retrieved data
+    const assigneeIssuesInstance = new AssigneeIssues(assigneeIssue);
+    await assigneeIssuesInstance.save();
+
+
+
+
+
    
 
     const assigneeIssuesJSON = (JSON.stringify(assigneeIssues));
     return res.send(assigneeIssuesJSON);
-   
-    
     
   } catch {
     console.log('FAILED TO CONNECT!');

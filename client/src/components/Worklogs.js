@@ -35,16 +35,7 @@ if(!issues)
        }
        )
     }
-    { issues && issues.data.Issues  && Object.keys(issues.data.Issues).map((value, i)=>{
-        return(
-          <div key={i}>
-          <h2>Object {i} :{value}</h2>
-          </div>
-        );
-       }
-       )
-    
-    }
+   
     </div>
   );
 }
