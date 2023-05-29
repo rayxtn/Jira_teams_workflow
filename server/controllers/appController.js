@@ -1,5 +1,5 @@
 import UserModel from '../model/User.model.js';
-import AssigneeIssues from '../model/worklogs.model.js';
+import assigneeSchema from '../model/worklogs.model.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import ENV from '../config.js'
@@ -10,21 +10,23 @@ import msal from '@azure/msal-node';
 import axios from 'axios';
 import { Client } from '@microsoft/microsoft-graph-client';
 import qs from 'qs';
+import mongoose from 'mongoose';
 
 
 
-export async function getIssues(req, res){
-    
-    try{
-        const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=DIN&maxResults=1000`
-        const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`          
-        const response = await fetch(jiraApiUrl , {method:'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' }})
-        const issuesData = await response.json();
-      
-        const issues = issuesData.issues;
 
 
-      const assigneeIssues = {};
+export async function getIssues(req, res) {
+  try {
+    const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=DIN&maxResults=1000`;
+    const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`;
+
+    const response = await fetch(jiraApiUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' } });
+    const issuesData = await response.json();
+    const issues = issuesData.issues;
+
+    const assigneeIssues = {};
+
     for (const issue of issues) {
       const issueId = issue.id;
       const assignee = issue.fields.assignee;
@@ -32,61 +34,57 @@ export async function getIssues(req, res){
       const assigneeName = assignee ? assignee.displayName : 'Unassigned';
 
       // Retrieve worklogs for each issue
-
-      const worklogsUrl = 'https://avaxia.atlassian.net/rest/api/3/issue/'+ issueId +'/worklog';
+      const worklogsUrl = 'https://avaxia.atlassian.net/rest/api/3/issue/' + issueId + '/worklog';
       const worklogsResponse = await fetch(worklogsUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' } });
       const worklogsData = await worklogsResponse.json();
       const worklogs = worklogsData.worklogs;
 
       // Group issues and worklogs by assignee email
-      
       if (!assigneeIssues[assigneeEmail]) {
         assigneeIssues[assigneeEmail] = {
-          'Assignee Name': assigneeName,
-          'Issues': {},
+          assigneeName,
+          issues: [],
         };
       }
 
-      assigneeIssues[assigneeEmail]['Issues'][issueId] = {
-        'Issue Key': issue.key,
-        'Summary': issue.fields.summary,
-        'Worklogs': worklogs,
-      };
-    }
-    //console.log(assigneeIssues);
-    
-
-
-    const assigneeIssue = {};
-
-    for (const issue of issues) {
-      // Retrieve and process each issue
-      // ...
-
-      assigneeIssue[assigneeEmail]['Issues'][issue] = {
-        'Issue Key': issue.key,
-        Summary: issue.fields.summary,
-        Worklogs: worklogs,
-      };
+      assigneeIssues[assigneeEmail].issues.push({
+        issueId,
+        issueKey: issue.key,
+        summary: issue.fields.summary,
+        worklogs,
+      });
     }
 
-    // Create an instance of AssigneeIssues and populate it with the retrieved data
-    const assigneeIssuesInstance = new AssigneeIssues(assigneeIssue);
-    await assigneeIssuesInstance.save();
+    console.log(assigneeIssues);
 
+    // Save data to MongoDB collection
+    const savedAssignees = await Assignee.create(Object.entries(assigneeIssues).map(([assigneeEmail, assigneeData]) => ({
+      assigneeEmail,
+      assigneeName: assigneeData.assigneeName,
+      issues: assigneeData.issues,
+    })));
 
+    console.log('Data saved to MongoDB:', savedAssignees);
 
-
-
-   
-
-    const assigneeIssuesJSON = (JSON.stringify(assigneeIssues));
+    const assigneeIssuesJSON = JSON.stringify(assigneeIssues);
     return res.send(assigneeIssuesJSON);
-    
-  } catch {
-    console.log('FAILED TO CONNECT!');
+  } catch (error) {
+    console.log('FAILED TO CONNECT!', error);
+    // Handle the error and send an appropriate response
+    return res.status(500).send('Failed to fetch and save issues.');
   }
 }
+
+
+async function getAllAssignees(req, res) {
+    try {
+      const assignees = await assigneeSchema.find();
+      res.send(assignees);
+    } catch (error) {
+      console.log('Failed to retrieve data from MongoDB:', error);
+      res.status(500).send('Failed to retrieve data.');
+    }
+  }
   
   
   

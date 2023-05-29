@@ -7,7 +7,7 @@ function Worklogs() {
   useEffect(() => {
     
     const fetchData = async () => {
-      const issues = await axios.get('http://localhost:8080/api/issues');
+      const issues = await axios.get('http://localhost:8080/api/assignedissues');
       console.log(issues);
       setIssues(issues);
     };
