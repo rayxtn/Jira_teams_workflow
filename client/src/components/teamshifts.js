@@ -10,7 +10,7 @@ function Worklogs() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/issues');
+        const response = await axios.get('http://localhost:8080/api/teams');
         const data = response.data;
         console.log(data);
         setLoading(false);
@@ -30,7 +30,7 @@ function Worklogs() {
       {loading ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <CircularProgress size={130} thickness={7} />
-          <div style={{ marginTop: '20px' }}>FETCHING SOME DATA FROM JIRA IN PROGRESS.. IT TAKES A COUPLE OF SECONDES..</div>
+          <div style={{ marginTop: '20px' }}>FETCHING SOME DATA FROM TEAMS IN PROGRESS.. IT TAKES A COUPLE OF SECONDES..</div>
         </Box>
       ) : (
         <div>

@@ -1,5 +1,6 @@
 import UserModel from '../model/User.model.js';
-import assigneeSchema from '../model/worklogs.model.js';
+
+import Shift from '../model/Shift.model.js'; // Import the Shift model or define it within the same file
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import ENV from '../config.js'
@@ -12,73 +13,91 @@ import { Client } from '@microsoft/microsoft-graph-client';
 import qs from 'qs';
 import mongoose from 'mongoose';
 
+// Define a schema for the collection
+export const assigneeSchema = new mongoose.Schema({
+    assigneeEmail: String,
+    assigneeName: String,
+    issues: [{
+      issueId: String,
+      issueKey: String,
+      summary: String,
+      worklogs: [{ /* Define the worklogs schema if needed */ }],
+    }],
+  });
+  
+  // Create a model for the collection
+  //const Assignee = mongoose.model('Assignee', assigneeSchema);
+  
+  
+  // Create a model for the collection
+  const Assignee = mongoose.model('Assignee', assigneeSchema);
 
 
-
-
-export async function getIssues(req, res) {
-  try {
-    const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=DIN&maxResults=1000`;
-    const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`;
-
-    const response = await fetch(jiraApiUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' } });
-    const issuesData = await response.json();
-    const issues = issuesData.issues;
-
-    const assigneeIssues = {};
-
-    for (const issue of issues) {
-      const issueId = issue.id;
-      const assignee = issue.fields.assignee;
-      const assigneeEmail = assignee ? assignee.emailAddress : 'Unassigned';
-      const assigneeName = assignee ? assignee.displayName : 'Unassigned';
-
-      // Retrieve worklogs for each issue
-      const worklogsUrl = 'https://avaxia.atlassian.net/rest/api/3/issue/' + issueId + '/worklog';
-      const worklogsResponse = await fetch(worklogsUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' } });
-      const worklogsData = await worklogsResponse.json();
-      const worklogs = worklogsData.worklogs;
-
-      // Group issues and worklogs by assignee email
-      if (!assigneeIssues[assigneeEmail]) {
-        assigneeIssues[assigneeEmail] = {
-          assigneeName,
-          issues: [],
-        };
-      }
-
-      assigneeIssues[assigneeEmail].issues.push({
-        issueId,
-        issueKey: issue.key,
-        summary: issue.fields.summary,
-        worklogs,
-      });
-    }
-
-    console.log(assigneeIssues);
-
-    // Save data to MongoDB collection
-    const savedAssignees = await Assignee.create(Object.entries(assigneeIssues).map(([assigneeEmail, assigneeData]) => ({
-      assigneeEmail,
-      assigneeName: assigneeData.assigneeName,
-      issues: assigneeData.issues,
-    })));
-
-    console.log('Data saved to MongoDB:', savedAssignees);
-
-    const assigneeIssuesJSON = JSON.stringify(assigneeIssues);
-    return res.send(assigneeIssuesJSON);
-  } catch (error) {
-    console.log('FAILED TO CONNECT!', error);
-    // Handle the error and send an appropriate response
-    return res.status(500).send('Failed to fetch and save issues.');
-  }
-}
-
-
-async function getAllAssignees(req, res) {
+  export async function getIssues(req, res) {
     try {
-      const assignees = await assigneeSchema.find();
+      const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=DIN&maxResults=1000`;
+      const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`;
+  
+      const response = await fetch(jiraApiUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' } });
+      const issuesData = await response.json();
+      const issues = issuesData.issues;
+  
+      const assigneeIssues = {};
+  
+      for (const issue of issues) {
+        const issueId = issue.id;
+        const assignee = issue.fields.assignee;
+        const assigneeEmail = assignee ? assignee.emailAddress : 'Unassigned';
+        const assigneeName = assignee ? assignee.displayName : 'Unassigned';
+  
+        // Retrieve worklogs for each issue
+        const worklogsUrl = 'https://avaxia.atlassian.net/rest/api/3/issue/' + issueId + '/worklog';
+        const worklogsResponse = await fetch(worklogsUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' } });
+        const worklogsData = await worklogsResponse.json();
+        const worklogs = worklogsData.worklogs;
+  
+        // Group issues and worklogs by assignee email
+        if (!assigneeIssues[assigneeEmail]) {
+          assigneeIssues[assigneeEmail] = {
+            assigneeName,
+            issues: [],
+          };
+        }
+  
+        assigneeIssues[assigneeEmail].issues.push({
+          issueId,
+          issueKey: issue.key,
+          summary: issue.fields.summary,
+          worklogs,
+        });
+      }
+  
+      console.log(assigneeIssues);
+  
+      // Clear existing data in the MongoDB collection
+      await Assignee.deleteMany({});
+  
+      // Save data to MongoDB collection
+      const savedAssignees = await Assignee.create(Object.entries(assigneeIssues).map(([assigneeEmail, assigneeData]) => ({
+        assigneeEmail,
+        assigneeName: assigneeData.assigneeName,
+        issues: assigneeData.issues,
+      })));
+  
+      console.log('Data saved to MongoDB:', savedAssignees);
+  
+      const assigneeIssuesJSON = JSON.stringify(assigneeIssues);
+      return res.send(assigneeIssuesJSON);
+    } catch (error) {
+      console.log('FAILED TO CONNECT!', error);
+      // Handle the error and send an appropriate response
+      return res.status(500).send('Failed to fetch and save issues.');
+    }
+  }
+  
+  async function getAllAssignees(req, res) {
+    try {
+      const assignees = await Assignee.find();
       res.send(assignees);
     } catch (error) {
       console.log('Failed to retrieve data from MongoDB:', error);
@@ -90,82 +109,102 @@ async function getAllAssignees(req, res) {
   
   
   
+
+  
+ 
+
+
+
+
+  
+
+
+
+  
+  export async function connectMS(request, response) {
+    try {
+      // Set your app credentials and desired permissions
+      let data = qs.stringify({
+        'grant_type': 'client_credentials',
+        'client_id': 'd9452d4b-7b90-49cb-96a9-dbd03bbbc1ec',
+        'state': '12345',
+        'scope': 'https://graph.microsoft.com/.default',
+        'client_secret': 'uo6k~B1F.2_yA~O5Mqf5rLMCP0KgXS14_Y',
+        '': ''
+      });
+  
+      let tokenConfig = {
+        method: 'post',
+        maxBodyLength: Infinity,
+        url: 'https://login.microsoftonline.com/7ecf1dcb-eca3-4727-8201-49cf4c94b669/oauth2/v2.0/token',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        data: data
+      };
+  
+      const tokenResponse = await axios.request(tokenConfig);
+      const accessToken = tokenResponse.data.access_token;
+  
+      let shiftsConfig = {
+        method: 'get',
+        maxBodyLength: Infinity,
+        url: 'https://graph.microsoft.com/v1.0/teams/d9f935aa-0d31-403d-9d4f-33728253b85a/schedule/shifts',
+        headers: {
+          'MS-APP-ACTS-AS': 'nassim.jloud@avaxia-group.com',
+          'Authorization': 'Bearer ' + accessToken
+        }
+      };
+  
+      const shiftsResponse = await axios.request(shiftsConfig);
+      const shiftsData = shiftsResponse.data;
+  
+      if (shiftsData && shiftsData.value && Array.isArray(shiftsData.value)) {
+        // Delete existing shifts from the database
+        await Shift.deleteMany({});
+  
+        // Process and save the new shifts data to the database
+        const shiftPromises = shiftsData.value.map(async (shiftData) => {
+          const shift = new Shift({
+            id: shiftData.id,
+            displayName: shiftData.displayName,
+            startDateTime: shiftData.startDateTime,
+            endDateTime: shiftData.endDateTime,
+            createdDateTime: shiftData.createdDateTime,
+            lastModifiedDateTime: shiftData.lastModifiedDateTime,
+            userId: shiftData.userId,
+            userDisplayName: shiftData.userDisplayName,
+            userEmailAddress: shiftData.userEmailAddress,
+            userRole: shiftData.userRole,
+            teamId: shiftData.teamId,
+            teamDisplayName: shiftData.teamDisplayName,
+            teamMemberCount: shiftData.teamMemberCount
+          });
+  
+          try {
+            const savedShift = await shift.save();
+            console.log('Shift saved:', savedShift);
+            return shift;
+          } catch (error) {
+            console.log('Failed to save shift:', error);
+            throw error; // Propagate the error to be caught later
+          }
+        });
+  
+        // Wait for all shift promises to resolve
+        const savedShifts = await Promise.all(shiftPromises);
+  
+        response.json({ shifts: savedShifts });
+      } else {
+        throw new Error('Invalid shifts data received');
+      }
+    } catch (error) {
+      console.log(error);
+      response.status(500).send('Failed to fetch and save data.');
+    }
+  }
   
   
-export async function connectMS(request,response){
-        try {
-            /*const config = {
-                auth: {
-                    clientId: 'dd6e0032-4b24-4b5f-9cfa-eeaa0aa1b493',
-                    authority: 'https://login.microsoftonline.com/7ecf1dcb-eca3-4727-8201-49cf4c94b669',
-                    clientSecret: 'Z.78Q~_TMBAM8SV3OVmEaa7VV4w9TkzqJbIo0aWu',
-                    redirectUri:'http://localhost:8080/api/teams'
-                }
-            };*/
-            // Set your app credentials and desired permissions
-            let data = qs.stringify({
-              'grant_type': 'client_credentials',
-              'client_id': 'd9452d4b-7b90-49cb-96a9-dbd03bbbc1ec',
-              'state': '12345',
-              'scope': 'https://graph.microsoft.com/.default',
-              'client_secret': 'uo6k~B1F.2_yA~O5Mqf5rLMCP0KgXS14_Y',
-              '': '' 
-            });
-            let config = {
-              method: 'post',
-              maxBodyLength: Infinity,
-              url: 'https://login.microsoftonline.com/7ecf1dcb-eca3-4727-8201-49cf4c94b669/oauth2/v2.0/token',
-              headers: { 
-                'Content-Type': 'application/x-www-form-urlencoded'
-              },
-              data : data
-            };
-            axios.request(config)
-            .then((response) => {
-              const jsontoken=  JSON.stringify(response.data.access_token);
-              //console.log(JSON.stringify(response.data));
-              console.log(jsontoken);
-              const str = jsontoken;
-              const trimmedStr = str.replace(/^"(.*)"$/, '$1');
-
-              console.log(trimmedStr); // Output: example string
-            let config = {
-                method: 'get',
-                maxBodyLength: Infinity,
-                url: 'https://graph.microsoft.com/v1.0/teams/d9f935aa-0d31-403d-9d4f-33728253b85a/schedule/shifts',
-                headers: {            
-                  'MS-APP-ACTS-AS': 'nassim.jloud@avaxia-group.com',          
-                  'Authorization': 'Bearer' +" " +    trimmedStr
-                }
-              };
-            ;
-              axios.request(config)
-.then((response) => {
-  console.log(JSON.stringify(response.data));
-})
-.catch((error) => {
-  console.log(error);
-});
-
-            })
-            .catch((error) => {
-              console.log(error);
-            });
-
-              
-
-
-
-
-        }catch(error) {
-            console.log(error);
-        }  
-
-
-
-}
-        
-
 
 //GET WORKLOGS
 

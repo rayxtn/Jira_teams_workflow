@@ -6,6 +6,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Username from './components/Username';
 import Password from './components/Password';
 import Register from './components/Register';
+import Teamshifts from './components/teamshifts';
 import Profile from './components/Profile';
 import Recovery from './components/Recovery';
 import Reset from './components/Reset';
@@ -21,7 +22,10 @@ import { AuthorizeUser, ProtectRoute } from './middleware/auth'
 
 /** root routes */
 const router = createBrowserRouter([
-
+    {
+        path : '/shifts',
+        element : <Teamshifts></Teamshifts>
+    },
     {
         path : '/',
         element : <Username></Username>
