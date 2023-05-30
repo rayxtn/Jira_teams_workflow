@@ -16,6 +16,7 @@ router.route('/login').post(controller.verifyUser,controller.login); // login in
 /** GET Methods */
 
 //router.route('/assigneddata').get(controller.getAllAssignees)
+router.route('/fetchworklogs').get(controller.fetchAssigneeData)
 router.route('/teams').get(controller.connectMS)
 router.route('/issues').get(controller.getIssues)
 router.route('/worklogs').get(controller.worklogs)

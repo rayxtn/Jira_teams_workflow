@@ -12,8 +12,10 @@ const Dashboard = ({ userName }) => {
   const menuItems = [
     { title: 'Home', icon: '🏠' },
     { title: 'Profile', icon: '👤' },
-    { title: 'Update DB/API', icon: '⚙️' },
-    { title: 'Week Work', icon: '⚙️' },
+    { title: 'Real-time Update', icon: '⚙️' },
+    { title: 'Weekly DATA', icon: '⚙️' },
+    { title: 'Worklogs', icon: '⚙️' },
+    { title: 'Shifts', icon: '⚙️' },
     // Add more menu items as needed
   ];
 
@@ -22,7 +24,7 @@ const Dashboard = ({ userName }) => {
     setShowButtons(false); // Reset the showButtons state when a different menu item is clicked
     setShowComponent1(false); // Reset the showComponent1 state when a different menu item is clicked
     setShowComponent2(false); // Reset the showComponent2 state when a different menu item is clicked
-    if (title === 'Update DB/API') {
+    if (title === 'Real-time Update') {
       setShowButtons(true);
     }
     // Perform any additional logic or navigation here
@@ -63,20 +65,19 @@ const Dashboard = ({ userName }) => {
       </div>
       <div className="content">
         <div className="welcome-message">
-          <h1>Welcome, {userName}!</h1>
           <p></p>
         </div>
         <br />
         <div className="dashboard-content">
           {/* Add your specific dashboard components and content here */}
           <h2>{activeMenuItem}</h2>
-          {activeMenuItem === 'Update DB/API' && showButtons && (
+          {activeMenuItem === 'Real-time Update' && showButtons && (
             <div className="buttons-container">
               <button className="cool-button" onClick={handleButton1Click}>
-                Execute Component 1
+                Update Jira data into the database
               </button>
               <button className="cool-button" onClick={handleButton2Click}>
-                Execute Component 2
+              Update shifts data into the database
               </button>
             </div>
           )}

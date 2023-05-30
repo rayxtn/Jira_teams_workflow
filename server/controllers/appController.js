@@ -1,5 +1,4 @@
 import UserModel from '../model/User.model.js';
-
 import Shift from '../model/Shift.model.js'; // Import the Shift model or define it within the same file
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -12,6 +11,27 @@ import axios from 'axios';
 import { Client } from '@microsoft/microsoft-graph-client';
 import qs from 'qs';
 import mongoose from 'mongoose';
+
+
+export async function fetchAssigneeData(req, res)
+ {
+  try {
+    const db = getDb(); // Get the MongoDB database object from the connection
+
+    // Fetch data from the "assignee" collection
+    const data = await db.collection('assignees').find().toArray();
+
+    // Send the data as a JSON response
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+
+
+
 
 // Define a schema for the collection
 export const assigneeSchema = new mongoose.Schema({

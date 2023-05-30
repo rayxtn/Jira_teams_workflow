@@ -26,11 +26,11 @@ function Worklogs() {
   }, []);
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
       {loading ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <CircularProgress size={130} thickness={7} />
-          <div style={{ marginTop: '20px' }}>FETCHING SOME DATA FROM JIRA IN PROGRESS.. IT TAKES A COUPLE OF SECONDES..</div>
+          <CircularProgress size={130} thickness={5} />
+          <div style={{ marginTop: '10px' }}>FETCHING SOME DATA FROM JIRA IN PROGRESS.. IT TAKES A COUPLE OF SECONDES..</div>
         </Box>
       ) : (
         <div>
