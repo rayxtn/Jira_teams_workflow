@@ -13,21 +13,37 @@ import qs from 'qs';
 import mongoose from 'mongoose';
 
 
-export async function fetchAssigneeData(req, res)
- {
+export async function fetchworklogs(req,res) {
   try {
-    const db = getDb(); // Get the MongoDB database object from the connection
+    // Retrieve all documents from the 'assignees' collection
+    const assignees = await Assignee.find();
 
-    // Fetch data from the "assignee" collection
-    const data = await db.collection('assignees').find().toArray();
+    // Process the retrieved data
+    assignees.forEach(assignee => {
+      console.log(`Assignee Name: ${assignee.assigneeName}`);
+      console.log(`Assignee Email: ${assignee.assigneeEmail}`);
+      console.log('Issues:');
 
-    // Send the data as a JSON response
-    res.json(data);
+      assignee.issues.forEach(issue => {
+        console.log(`\tIssue ID: ${issue.issueId}`);
+        console.log(`\tIssue Key: ${issue.issueKey}`);
+        console.log(`\tSummary: ${issue.summary}`);
+        console.log('\tWorklogs:');
+
+       // issue.worklogs.forEach(worklog => {
+          // Process worklog data if needed
+       // });
+
+        console.log('----------------');
+      });
+
+      console.log('================');
+    });
   } catch (error) {
-    console.error('Error fetching data:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error retrieving data:', error);
   }
-};
+}
+
 
 
 
