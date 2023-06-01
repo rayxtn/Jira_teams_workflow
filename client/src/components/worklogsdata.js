@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-
 const Worklogsdata = () => {
   const [data, setData] = useState([]);
 
@@ -9,7 +8,7 @@ const Worklogsdata = () => {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('/api/assigneedata'); // Replace '/api/assignee' with the actual API endpoint to fetch data
+      const response = await fetch('http://localhost:8080/api/fetchw'); // Replace '/api/assignee' with the actual API endpoint to fetch data
       const jsonData = await response.json();
       setData(jsonData);
     } catch (error) {
@@ -17,29 +16,35 @@ const Worklogsdata = () => {
     }
   };
 
+ 
   return (
     <div>
-      <h1>Data from MongoDB Collection:</h1>
-      <ul>
-        {data.map((item) => (
-          <li key={item._id}>
-            <p>Assignee Name: {item.assigneeName}</p>
-            <p>Assignee Email: {item.assigneeEmail}</p>
-            <p>Issues:</p>
-            <ul>
-              {item.issues.map((issue) => (
-                <li key={issue.issueId}>
-                  <p>Issue ID: {issue.issueId}</p>
-                  <p>Issue Key: {issue.issueKey}</p>
-                  <p>Summary: {issue.summary}</p>
-                </li>
+      {data.map((assignees, index) => (
+        <div key={index}>
+          <h3>Assignee Name: {assignees.assigneeName}</h3>
+          
+         
+          {assignees.issues.map((issue, index) => (
+            <div key={index}>
+
+              <h1>Worklogs done for this week:</h1>
+              {issue.worklogs.map((worklog, index) => (
+                <div key={index}>
+                  <p>Worklog ID: {worklog.id}</p>
+                  <p>Created: {worklog.created}</p>
+                  <p>Updated: {worklog.updated}</p>
+                  <p>Started: {worklog.started}</p>
+                  <p>Time Spent: {worklog.timeSpent}</p>
+                  <p>Time Spent Seconds: {worklog.timeSpentSeconds}</p>
+                  <p>Issue ID : {worklog.issueId}</p>
+  
+                </div>
               ))}
-            </ul>
-          </li>
-        ))}
-      </ul>
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
-};
-
+}
 export default Worklogsdata;

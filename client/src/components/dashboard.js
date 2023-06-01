@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import '../styles/dashboard.css'; // Import the CSS file for styling
 import Component1 from './Worklogs'; // Import the first component
 import Component2 from './teamshifts'; // Import the second component
+import worklogsdata from './worklogsdata';
 
 const Dashboard = ({ userName }) => {
   const [activeMenuItem, setActiveMenuItem] = useState('Home');
@@ -81,9 +82,12 @@ const Dashboard = ({ userName }) => {
               </button>
             </div>
           )}
+          
           {showComponent1 && <Component1 />}
           {showComponent2 && <Component2 />}
           {/* Additional dashboard components */}
+          {activeMenuItem === "Weekly DATA"}
+          {worklogsdata && <worklogsdata />}
         </div>
       </div>
     </div>

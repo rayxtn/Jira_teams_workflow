@@ -11,6 +11,7 @@ import Teamshifts from './components/teamshifts';
 import Profile from './components/Profile';
 import Recovery from './components/Recovery';
 import Reset from './components/Reset';
+import Worklogsdata from './components/worklogsdata';
 import Worklogs from './components/Worklogs';
 import PageNotFound from './components/PageNotFound';
 
@@ -23,6 +24,10 @@ import { AuthorizeUser, ProtectRoute } from './middleware/auth'
 
 /** root routes */
 const router = createBrowserRouter([
+    {
+        path : '/worklogsdata',
+        element : <Worklogsdata></Worklogsdata>
+    },
     {
         path : '/userboard',
         element : <Dashboard></Dashboard>

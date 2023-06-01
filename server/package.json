@@ -21,6 +21,7 @@
     "jsonwebtoken": "^8.5.1",
     "login": "^0.8.0",
     "mailgen": "^2.0.27",
+    "moment": "^2.29.4",
     "mongodb-memory-server": "^8.10.2",
     "mongoose": "^6.8.0",
     "morgan": "^1.10.0",

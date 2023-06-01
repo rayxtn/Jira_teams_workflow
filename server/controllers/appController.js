@@ -1,6 +1,7 @@
 import UserModel from '../model/User.model.js';
 import Shift from '../model/Shift.model.js'; // Import the Shift model or define it within the same file
 import bcrypt from 'bcrypt';
+import weekdata from '../model/weekdata.model.js'
 import jwt from 'jsonwebtoken';
 import ENV from '../config.js'
 import JIRA_TOKEN from '../config.js';
@@ -11,42 +12,111 @@ import axios from 'axios';
 import { Client } from '@microsoft/microsoft-graph-client';
 import qs from 'qs';
 import mongoose from 'mongoose';
+import moment from "moment";
 
 
-export async function fetchworklogs(req,res) {
+
+export async function fetchworklogs(req, res) {
   try {
     // Retrieve all documents from the 'assignees' collection
     const assignees = await Assignee.find();
 
-    // Process the retrieved data
-    assignees.forEach(assignee => {
-      console.log(`Assignee Name: ${assignee.assigneeName}`);
-      console.log(`Assignee Email: ${assignee.assigneeEmail}`);
-      console.log('Issues:');
+    // Filter the worklogs for the current week (Monday to Friday)
+    const currentWeekStart = moment().startOf('week'); // Get the start of the current week
+    const currentWeekEnd = moment().endOf('week'); // Get the end of the current week
 
-      assignee.issues.forEach(issue => {
-        console.log(`\tIssue ID: ${issue.issueId}`);
-        console.log(`\tIssue Key: ${issue.issueKey}`);
-        console.log(`\tSummary: ${issue.summary}`);
-        console.log('\tWorklogs:');
+    const filteredAssignees = assignees.map((assignee) => {
+      const filteredIssues = assignee.issues.reduce((filtered, issue) => {
+        const filteredWorklogs = issue.worklogs.filter((worklog) => {
+          const createdDate = moment(worklog.created);
+          return createdDate.isBetween(currentWeekStart, currentWeekEnd, 'day', '[]');
+        });
 
-       // issue.worklogs.forEach(worklog => {
-          // Process worklog data if needed
-       // });
+        if (filteredWorklogs.length > 0) {
+          filtered.push({ ...issue, worklogs: filteredWorklogs });
+        }
 
-        console.log('----------------');
-      });
+        return filtered;
+      }, []);
 
-      console.log('================');
-    });
+      if (filteredIssues.length > 0) {
+        return {
+          assigneeName: assignee.assigneeName,
+          assigneeEmail: assignee.assigneeEmail,
+          issues: filteredIssues,
+        };
+      } else {
+        return null;
+      }
+    }).filter(Boolean);
+
+    // Save the filtered data into the 'weeksdata' collection
+    const weekData = {
+      week: `week_${currentWeekStart.format('YYYY-MM-DD')}`,
+      data: filteredAssignees,
+    };
+
+    await weekdata.create(weekData);
+
+    // Send the filtered data as JSON response
+    res.json(filteredAssignees);
   } catch (error) {
     console.error('Error retrieving data:', error);
+    // Send an error response if needed
+    res.status(500).json({ error: 'Internal server error' });
   }
 }
 
 
 
 
+
+
+
+/*export async function fetchworklogs(req, res) {
+  try {
+    // Retrieve all documents from the 'assignees' collection
+    const assignees = await Assignee.find();
+
+    // Filter the worklogs for the current week (Monday to Friday)
+    const currentWeekStart = moment().startOf('week'); // Get the start of the current week
+    const currentWeekEnd = moment().endOf('week'); // Get the end of the current week
+
+    const filteredAssignees = assignees.map((assignee) => {
+      const filteredIssues = assignee.issues.reduce((filtered, issue) => {
+        const filteredWorklogs = issue.worklogs.filter((worklog) => {
+          const createdDate = moment(worklog.created);
+          return createdDate.isBetween(currentWeekStart, currentWeekEnd, 'day', '[]');
+        });
+
+        if (filteredWorklogs.length > 0) {
+          filtered.push({ ...issue, worklogs: filteredWorklogs });
+        }
+
+        return filtered;
+      }, []);
+
+      if (filteredIssues.length > 0) {
+        return {
+          assigneeName: assignee.assigneeName,
+          assigneeEmail: assignee.assigneeEmail,
+          issues: filteredIssues,
+        };
+      } else {
+        return null;
+      }
+    }).filter(Boolean);
+
+    // Send the filtered data as JSON response
+    res.json(filteredAssignees);
+  } catch (error) {
+    console.error('Error retrieving data:', error);
+    // Send an error response if needed
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+*/
 
 
 // Define a schema for the collection
