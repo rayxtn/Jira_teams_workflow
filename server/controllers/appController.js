@@ -15,51 +15,96 @@ import mongoose from 'mongoose';
 import moment from "moment";
 
 
+export async function fetchShiftsData(req, res) {
+  try {
+    // Retrieve all documents from the 'shifts' collection
+    const shifts = await Shift.find();
+
+    // Filter the shifts for the current week (Monday to Sunday)
+    const currentWeekStart = moment().startOf('week'); // Get the start of the current week
+    const currentWeekEnd = moment().endOf('week'); // Get the end of the current week
+
+    const filteredShifts = shifts.filter((shift) => {
+      // Check if the shift's start or end date falls within the current week's range
+      return moment(shift.startDateTime).isBetween(currentWeekStart, currentWeekEnd, 'day', '[]')
+        || moment(shift.endDateTime).isBetween(currentWeekStart, currentWeekEnd, 'day', '[]');
+    });
+
+    if (filteredShifts.length === 0) {
+      // If no shifts are found for the current week
+      return res.json({ message: 'Not enough data' });
+    }
+
+    // Check if the 'shiftsdata' collection already exists
+    const existingShiftsData = await ShiftsData.findOne();
+
+    if (existingShiftsData) {
+      // Update the existing 'shiftsdata' with the filtered shifts
+      existingShiftsData.shifts = filteredShifts;
+      await existingShiftsData.save();
+    } else {
+      // Create a new 'shiftsdata' document with the filtered shifts
+      await ShiftsData.create({ shifts: filteredShifts });
+    }
+
+    // Retrieve the updated 'shiftsdata' from the collection
+    const updatedShiftsData = await ShiftsData.findOne();
+
+    // Send the updated 'shiftsdata' as JSON response
+    res.json(updatedShiftsData);
+  } catch (error) {
+    console.error('Error retrieving data:', error);
+    // Send a generic response for any error occurred
+    res.status(200).json({ message: 'Not enough data' });
+  }
+}
+
+
+
+
+
+
+
+
 
 export async function fetchworklogs(req, res) {
   try {
     // Retrieve all documents from the 'assignees' collection
     const assignees = await Assignee.find();
 
-    // Filter the worklogs for the current week (Monday to Friday)
-    const currentWeekStart = moment().startOf('week'); // Get the start of the current week
-    const currentWeekEnd = moment().endOf('week'); // Get the end of the current week
+    // Filter the worklogs for the current week (Monday to Sunday)
+    const currentWeekStart = moment().startOf('isoWeek'); // Get the start of the current week (Monday)
+    const currentWeekEnd = moment().endOf('isoWeek'); // Get the end of the current week (Sunday)
 
-    const filteredAssignees = assignees.map((assignee) => {
-      const filteredIssues = assignee.issues.reduce((filtered, issue) => {
-        const filteredWorklogs = issue.worklogs.filter((worklog) => {
-          const createdDate = moment(worklog.created);
-          return createdDate.isBetween(currentWeekStart, currentWeekEnd, 'day', '[]');
-        });
+    // Check if there is existing worklogs data for the current week in the 'weeksdata' collection
+    const existingWeekData = await weekdata.findOne({ week: `week_${currentWeekStart.format('YYYY-MM-DD')}` });
 
-        if (filteredWorklogs.length > 0) {
-          filtered.push({ ...issue, worklogs: filteredWorklogs });
-        }
+    if (existingWeekData && !isWeekDataComplete(existingWeekData.data)) {
+      // Update the existing incomplete data and return it
+      const updatedData = updateIncompleteData(existingWeekData.data, assignees, currentWeekStart, currentWeekEnd);
+      await weekdata.updateOne({ week: existingWeekData.week }, { $set: { data: updatedData } });
 
-        return filtered;
-      }, []);
+      // Send the updated data as JSON response
+      res.json(updatedData);
+    } else {
+      // Filter and store the worklogs data for the current week
+      const filteredAssignees = filterWorklogsData(assignees, currentWeekStart, currentWeekEnd);
 
-      if (filteredIssues.length > 0) {
-        return {
-          assigneeName: assignee.assigneeName,
-          assigneeEmail: assignee.assigneeEmail,
-          issues: filteredIssues,
-        };
-      } else {
-        return null;
-      }
-    }).filter(Boolean);
+      // Save the filtered data into the 'weeksdata' collection
+      const weekData = {
+        week: `week_${currentWeekStart.format('YYYY-MM-DD')}`,
+        data: filteredAssignees,
+      };
 
-    // Save the filtered data into the 'weeksdata' collection
-    const weekData = {
-      week: `week_${currentWeekStart.format('YYYY-MM-DD')}`,
-      data: filteredAssignees,
-    };
+      await weekdata.findOneAndUpdate(
+        { week: weekData.week },
+        { $set: weekData },
+        { upsert: true }
+      );
 
-    await weekdata.create(weekData);
-
-    // Send the filtered data as JSON response
-    res.json(filteredAssignees);
+      // Send the filtered data as JSON response
+      res.json(filteredAssignees);
+    }
   } catch (error) {
     console.error('Error retrieving data:', error);
     // Send an error response if needed
@@ -67,6 +112,52 @@ export async function fetchworklogs(req, res) {
   }
 }
 
+function isWeekDataComplete(data) {
+  // Check if the week data is complete by examining the required properties
+  // You can customize the logic based on your specific data structure
+  return data.every(assignee => assignee.issues.every(issue => issue.isComplete));
+}
+
+function updateIncompleteData(data, assignees, currentWeekStart, currentWeekEnd) {
+  // Update the incomplete data based on your specific requirements
+  // You can modify this function to update the data structure as needed
+
+  // Example: Set all incomplete issues to complete
+  return data.map(assignee => ({
+    ...assignee,
+    issues: assignee.issues.map(issue => ({
+      ...issue,
+      isComplete: true
+    }))
+  }));
+
+  // Implement your own update logic based on the data structure and requirements
+}
+
+function filterWorklogsData(assignees, currentWeekStart, currentWeekEnd) {
+  // Filter the worklogs data for the current week based on your specific requirements
+  // You can modify this function to filter the data structure as needed
+
+  // Example: Filter worklogs based on the created date
+  return assignees.map(assignee => ({
+    assigneeName: assignee.assigneeName,
+    assigneeEmail: assignee.assigneeEmail,
+    issues: assignee.issues.reduce((filteredIssues, issue) => {
+      const filteredWorklogs = issue.worklogs.filter(worklog => {
+        const createdDate = moment(worklog.created);
+        return createdDate.isBetween(currentWeekStart, currentWeekEnd, 'day', '[]');
+      });
+
+      if (filteredWorklogs.length > 0) {
+        filteredIssues.push({ ...issue, worklogs: filteredWorklogs });
+      }
+
+      return filteredIssues;
+    }, [])
+  })).filter(assignee => assignee.issues.length > 0);
+
+  // Implement your own filtering logic based on the data structure and requirements
+}
 
 
 
@@ -210,20 +301,46 @@ export const assigneeSchema = new mongoose.Schema({
       res.status(500).send('Failed to retrieve data.');
     }
   }
+  export async function getAllShifts(request, response) {
+    try {
+      const shifts = await Shift.find();
   
-  
-  
-  
-  
+      response.json({ shifts });
+    } catch (error) {
+      console.log(error);
+      response.status(500).send('Failed to fetch shifts from the database.');
+    }
+  }
+
+
 
   
- 
 
-
-
-
+  export async function getShiftsForCurrentWeek(request, response) {
+    try {
+      const today = new Date();
+      const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 1)); // Monday of the current week
+      const endOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 7)); // Sunday of the current week
   
-
+      const shifts = await Shift.find({
+        'sharedShift.startDateTime': { $gte: startOfWeek },
+        'sharedShift.endDateTime': { $lte: endOfWeek }
+      });
+  
+      if (shifts.length === 0) {
+        // Return empty array if no shifts found
+        response.json({ shifts: [] });
+      } else {
+        response.json({ shifts });
+      }
+    } catch (error) {
+      console.log(error);
+      response.status(500).send('Failed to fetch shifts for the current week.');
+    }
+  }
+  
+  
+  
 
 
   
@@ -255,7 +372,7 @@ export const assigneeSchema = new mongoose.Schema({
       let shiftsConfig = {
         method: 'get',
         maxBodyLength: Infinity,
-        url: 'https://graph.microsoft.com/v1.0/teams/d9f935aa-0d31-403d-9d4f-33728253b85a/schedule/shifts',
+        url: 'https://graph.microsoft.com/v1.0/teams/d9f935aa-0d31-403d-9d4f-33728253b85a/schedule/shifts?$filter=sharedShift/startDateTime ge 2023-03-10T00:00:00.000Z and sharedShift/endDateTime le 2023-03-11T00:00:00.000Z',
         headers: {
           'MS-APP-ACTS-AS': 'nassim.jloud@avaxia-group.com',
           'Authorization': 'Bearer ' + accessToken
@@ -272,19 +389,15 @@ export const assigneeSchema = new mongoose.Schema({
         // Process and save the new shifts data to the database
         const shiftPromises = shiftsData.value.map(async (shiftData) => {
           const shift = new Shift({
+            odataEtag: shiftData['@odata.etag'],
             id: shiftData.id,
-            displayName: shiftData.displayName,
-            startDateTime: shiftData.startDateTime,
-            endDateTime: shiftData.endDateTime,
             createdDateTime: shiftData.createdDateTime,
             lastModifiedDateTime: shiftData.lastModifiedDateTime,
+            schedulingGroupId: shiftData.schedulingGroupId,
             userId: shiftData.userId,
-            userDisplayName: shiftData.userDisplayName,
-            userEmailAddress: shiftData.userEmailAddress,
-            userRole: shiftData.userRole,
-            teamId: shiftData.teamId,
-            teamDisplayName: shiftData.teamDisplayName,
-            teamMemberCount: shiftData.teamMemberCount
+            draftShift: shiftData.draftShift,
+            lastModifiedBy: shiftData.lastModifiedBy,
+            sharedShift: shiftData.sharedShift
           });
   
           try {
