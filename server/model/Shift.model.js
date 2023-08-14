@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 
 const shiftSchema = new mongoose.Schema({
+  week: {
+    startDate:{ type: Date },
+    endDate:{ type: Date }
+  },
+  shifts: {
       odataEtag: { type: String },
       id: { type: String },
       createdDateTime: { type: Date },
@@ -25,7 +30,9 @@ const shiftSchema = new mongoose.Schema({
         notes: { type: String },
         activities: { type: Array },
       },
-    });
+    }
+  }
+  );
 
 const Shift = mongoose.model('Shift', shiftSchema);
 

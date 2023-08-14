@@ -14,7 +14,7 @@ function Worklogs() {
         const data = response.data;
         console.log(data);
         setLoading(false);
-        setMessage('REAL TIME DATA RETRIVED AND SAVED IN THE DATABASE');
+        setMessage('DATA RETRIVED AND SAVED IN THE DATABASE');
       } catch (error) {
         console.log(error);
         setLoading(false);
@@ -30,7 +30,7 @@ function Worklogs() {
       {loading ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <CircularProgress size={130} thickness={5} />
-          <div style={{ marginTop: '20px' }}>FETCHING SOME DATA FROM TEAMS IN PROGRESS.. IT TAKES A COUPLE OF SECONDES..</div>
+          <div style={{ marginTop: '20px' }}>FETCHING WEEK DATA FROM TEAMS API IN PROGRESS.. IT TAKES A COUPLE OF MINUTES...</div>
         </Box>
       ) : (
         <div>

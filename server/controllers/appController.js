@@ -13,51 +13,180 @@ import { Client } from '@microsoft/microsoft-graph-client';
 import qs from 'qs';
 import mongoose from 'mongoose';
 import moment from "moment";
-
+import Project from '../model/issues.model.js';
+import ShiftsByWeek from '../model/ShiftsByWeek.model.js';
+import Issue from '../model/issues.model.js';
 
 export async function fetchShiftsData(req, res) {
   try {
-    // Retrieve all documents from the 'shifts' collection
     const shifts = await Shift.find();
-
-    // Filter the shifts for the current week (Monday to Sunday)
-    const currentWeekStart = moment().startOf('week'); // Get the start of the current week
-    const currentWeekEnd = moment().endOf('week'); // Get the end of the current week
-
-    const filteredShifts = shifts.filter((shift) => {
-      // Check if the shift's start or end date falls within the current week's range
-      return moment(shift.startDateTime).isBetween(currentWeekStart, currentWeekEnd, 'day', '[]')
-        || moment(shift.endDateTime).isBetween(currentWeekStart, currentWeekEnd, 'day', '[]');
-    });
-
-    if (filteredShifts.length === 0) {
-      // If no shifts are found for the current week
+    // Check if there are any shifts in the database
+    if (shifts.length === 0) {
       return res.json({ message: 'Not enough data' });
     }
-
-    // Check if the 'shiftsdata' collection already exists
-    const existingShiftsData = await ShiftsData.findOne();
-
-    if (existingShiftsData) {
-      // Update the existing 'shiftsdata' with the filtered shifts
-      existingShiftsData.shifts = filteredShifts;
-      await existingShiftsData.save();
+    // Group the shifts by the week start date
+    const shiftsByWeek = shifts.reduce((acc, shift) => {
+      const weekStartDate = moment(shift.startDateTime).startOf('week').toISOString();
+      acc[weekStartDate] = acc[weekStartDate] || [];
+      acc[weekStartDate].push(shift);
+      return acc;
+    }, {});
+    // Find the first week's shifts (any week) from the grouped data
+    const firstWeekShifts = Object.values(shiftsByWeek)[0];
+    if (firstWeekShifts) {
+      // If there are shifts for any week, send them as JSON response
+      return res.json(firstWeekShifts);
     } else {
-      // Create a new 'shiftsdata' document with the filtered shifts
-      await ShiftsData.create({ shifts: filteredShifts });
+      // If no data is found for any week, send a response indicating insufficient data
+      return res.json({ message: 'Not enough data' });
     }
-
-    // Retrieve the updated 'shiftsdata' from the collection
-    const updatedShiftsData = await ShiftsData.findOne();
-
-    // Send the updated 'shiftsdata' as JSON response
-    res.json(updatedShiftsData);
   } catch (error) {
     console.error('Error retrieving data:', error);
     // Send a generic response for any error occurred
-    res.status(200).json({ message: 'Not enough data' });
+    res.status(500).json({ message: 'Error retrieving data' });
   }
 }
+
+export async function getCurrentWeekData(req, res) {
+  const today = new Date();
+  const currentDay = today.getDay(); 
+  const weekStartDate = new Date(today);
+  weekStartDate.setDate(today.getDate() - currentDay);
+  weekStartDate.setHours(0, 0, 0, 0);
+
+  const weekEndDate = new Date(today);
+  weekEndDate.setDate(weekStartDate.getDate() + 6);
+  weekEndDate.setHours(23, 59, 59, 999);
+
+  try {
+    const shiftUsersEmails = await ShiftsByWeek.aggregate([
+      { $match: { 'startDate': { $gte: weekStartDate }, 'endDate': { $lte: weekEndDate } } },
+      { $project: { 'data': 1 } },
+      { $unwind: '$data' },
+      { $unwind: '$data.users' },
+      { $project: { _id: 0, email: '$data.users.email' } }
+    ]).exec();
+
+    const issueUsersEmails = await Issue.aggregate([
+      { $unwind: '$issues' },
+      { $unwind: '$issues.worklogs' },
+      {
+        $match: {
+          'issues.worklogs.started': {
+            $gte: weekStartDate,
+            $lte: weekEndDate,
+          },
+        },
+      },
+      { $project: { _id: 0, email: 1 } },
+    ]).exec();
+
+    const commonUsersEmails = shiftUsersEmails.filter(shiftUser => issueUsersEmails.some(issueUser => issueUser.email === shiftUser.email));
+
+    const usersInShiftsOnlyEmails = shiftUsersEmails.filter(shiftUser => !issueUsersEmails.some(issueUser => issueUser.email === shiftUser.email));
+
+    const usersInIssuesOnlyEmails = issueUsersEmails.filter(issueUser => !shiftUsersEmails.some(shiftUser => shiftUser.email === issueUser.email));
+
+    res.json({ commonUsersEmails, usersInShiftsOnlyEmails, usersInIssuesOnlyEmails });
+  } catch (error) {
+    console.error('Failed to fetch data:', error);
+    res.status(500).json({ error: 'Failed to fetch data' });
+  }
+}
+
+
+export async function getUsersWithShiftsToday(req, res) {
+  try {
+    const today = new Date();
+    const todayStart = new Date(today);
+    todayStart.setUTCHours(0, 0, 0, 0);
+
+    const todayEnd = new Date(today);
+    todayEnd.setUTCHours(23, 59, 59, 999);
+
+    const usersWithShiftsToday = [];
+
+    const shiftsByWeek = await ShiftsByWeek.findOne({
+      'startDate': { $lte: todayEnd },
+      'endDate': { $gte: todayStart },
+    });
+
+    if (shiftsByWeek && shiftsByWeek.data && shiftsByWeek.data.users) {
+      const userGroups = Object.values(shiftsByWeek.data.users);
+
+      for (const userGroup of userGroups) {
+        for (const userShifts of userGroup) {
+          if (
+            userShifts.shifts &&
+            userShifts.shifts.length > 0
+          ) {
+            for (const shift of userShifts.shifts) {
+              if (
+                shift.startDateTime &&
+                shift.endDateTime &&
+                new Date(shift.startDateTime) <= todayEnd &&
+                new Date(shift.endDateTime) >= todayStart
+              ) {
+                usersWithShiftsToday.push(userShifts);
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    res.json(usersWithShiftsToday);
+  } catch (error) {
+    console.error('Failed to fetch data:', error);
+    res.status(500).json({ error: 'Failed to fetch data' });
+  }
+}
+
+
+// export async function fetchShiftsData(req, res) {
+//   try {
+//     // Retrieve all documents from the 'shifts' collection
+//     const shifts = await Shift.find();
+
+//     // Filter the shifts for the current week (Monday to Sunday)
+//     const currentWeekStart = moment().startOf('week'); // Get the start of the current week
+//     const currentWeekEnd = moment().endOf('week'); // Get the end of the current week
+
+//     const filteredShifts = shifts.filter((shift) => {
+//       // Check if the shift's start or end date falls within the current week's range
+//       return moment(shift.startDateTime).isBetween(currentWeekStart, currentWeekEnd, 'day', '[]')
+//         || moment(shift.endDateTime).isBetween(currentWeekStart, currentWeekEnd, 'day', '[]');
+//     });
+
+//     if (filteredShifts.length === 0) {
+//       // If no shifts are found for the current week
+//       return res.json({ message: 'Not enough data' });
+//     }
+
+//     // Check if the 'shiftsdata' collection already exists
+//     const existingShiftsData = await ShiftsData.findOne();
+
+//     if (existingShiftsData) {
+//       // Update the existing 'shiftsdata' with the filtered shifts
+//       existingShiftsData.shifts = filteredShifts;
+//       await existingShiftsData.save();
+//     } else {
+//       // Create a new 'shiftsdata' document with the filtered shifts
+//       await ShiftsData.create({ shifts: filteredShifts });
+//     }
+
+//     // Retrieve the updated 'shiftsdata' from the collection
+//     const updatedShiftsData = await ShiftsData.findOne();
+
+//     // Send the updated 'shiftsdata' as JSON response
+//     res.json(updatedShiftsData);
+//   } catch (error) {
+//     console.error('Error retrieving data:', error);
+//     // Send a generic response for any error occurred
+//     res.status(200).json({ message: 'Not enough data' });
+//   }
+// }
 
 
 
@@ -71,37 +200,30 @@ export async function fetchworklogs(req, res) {
   try {
     // Retrieve all documents from the 'assignees' collection
     const assignees = await Assignee.find();
-
     // Filter the worklogs for the current week (Monday to Sunday)
     const currentWeekStart = moment().startOf('isoWeek'); // Get the start of the current week (Monday)
     const currentWeekEnd = moment().endOf('isoWeek'); // Get the end of the current week (Sunday)
-
     // Check if there is existing worklogs data for the current week in the 'weeksdata' collection
     const existingWeekData = await weekdata.findOne({ week: `week_${currentWeekStart.format('YYYY-MM-DD')}` });
-
     if (existingWeekData && !isWeekDataComplete(existingWeekData.data)) {
       // Update the existing incomplete data and return it
       const updatedData = updateIncompleteData(existingWeekData.data, assignees, currentWeekStart, currentWeekEnd);
       await weekdata.updateOne({ week: existingWeekData.week }, { $set: { data: updatedData } });
-
       // Send the updated data as JSON response
       res.json(updatedData);
     } else {
       // Filter and store the worklogs data for the current week
       const filteredAssignees = filterWorklogsData(assignees, currentWeekStart, currentWeekEnd);
-
       // Save the filtered data into the 'weeksdata' collection
       const weekData = {
         week: `week_${currentWeekStart.format('YYYY-MM-DD')}`,
         data: filteredAssignees,
       };
-
       await weekdata.findOneAndUpdate(
         { week: weekData.week },
         { $set: weekData },
         { upsert: true }
       );
-
       // Send the filtered data as JSON response
       res.json(filteredAssignees);
     }
@@ -112,11 +234,13 @@ export async function fetchworklogs(req, res) {
   }
 }
 
+
 function isWeekDataComplete(data) {
   // Check if the week data is complete by examining the required properties
   // You can customize the logic based on your specific data structure
   return data.every(assignee => assignee.issues.every(issue => issue.isComplete));
 }
+
 
 function updateIncompleteData(data, assignees, currentWeekStart, currentWeekEnd) {
   // Update the incomplete data based on your specific requirements
@@ -133,11 +257,9 @@ function updateIncompleteData(data, assignees, currentWeekStart, currentWeekEnd)
 
   // Implement your own update logic based on the data structure and requirements
 }
-
 function filterWorklogsData(assignees, currentWeekStart, currentWeekEnd) {
   // Filter the worklogs data for the current week based on your specific requirements
   // You can modify this function to filter the data structure as needed
-
   // Example: Filter worklogs based on the created date
   return assignees.map(assignee => ({
     assigneeName: assignee.assigneeName,
@@ -147,15 +269,12 @@ function filterWorklogsData(assignees, currentWeekStart, currentWeekEnd) {
         const createdDate = moment(worklog.created);
         return createdDate.isBetween(currentWeekStart, currentWeekEnd, 'day', '[]');
       });
-
       if (filteredWorklogs.length > 0) {
         filteredIssues.push({ ...issue, worklogs: filteredWorklogs });
       }
-
       return filteredIssues;
     }, [])
   })).filter(assignee => assignee.issues.length > 0);
-
   // Implement your own filtering logic based on the data structure and requirements
 }
 
@@ -211,48 +330,872 @@ function filterWorklogsData(assignees, currentWeekStart, currentWeekEnd) {
 
 
 // Define a schema for the collection
-export const assigneeSchema = new mongoose.Schema({
-    assigneeEmail: String,
-    assigneeName: String,
-    issues: [{
-      issueId: String,
-      issueKey: String,
-      summary: String,
-      worklogs: [{ /* Define the worklogs schema if needed */ }],
-    }],
-  });
+// export const assigneeSchema = new mongoose.Schema({
+//     assigneeEmail: String,
+//     assigneeName: String,
+//     issues: [{
+//       issueId: String,
+//       issueKey: String,
+//       summary: String,
+//       worklogs: [{ /* Define the worklogs schema if needed */ }],
+//     }],
+//   });
   
   // Create a model for the collection
   //const Assignee = mongoose.model('Assignee', assigneeSchema);
   
   
   // Create a model for the collection
-  const Assignee = mongoose.model('Assignee', assigneeSchema);
+  // const Assignee = mongoose.model('Assignee', assigneeSchema);
+  // export async function getIssues(req, res) {
+  //   try {
+  //     const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=DIN&maxResults=1000`;
+  //     const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`;
+  
+  //     const response = await fetch(jiraApiUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' } });
+  //     const issuesData = await response.json();
+  //     const issues = issuesData.issues;
+  
+  //     const assigneeIssues = {};
+  
+  //     for (const issue of issues) {
+  //       const issueId = issue.id;
+  //       const assignee = issue.fields.assignee;
+  //       const assigneeEmail = assignee ? assignee.emailAddress : 'Unassigned';
+  //       const assigneeName = assignee ? assignee.displayName : 'Unassigned';
+  
+  //       // Retrieve worklogs for each issue
+  //       const worklogsUrl = 'https://avaxia.atlassian.net/rest/api/3/issue/' + issueId + '/worklog';
+  //       const worklogsResponse = await fetch(worklogsUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' } });
+  //       const worklogsData = await worklogsResponse.json();
+  //       const worklogs = worklogsData.worklogs;
+  
+  //       // Group issues and worklogs by assignee email
+  //       if (!assigneeIssues[assigneeEmail]) {
+  //         assigneeIssues[assigneeEmail] = {
+  //           assigneeName,
+  //           issues: [],
+  //         };
+  //       }
+  
+  //       assigneeIssues[assigneeEmail].issues.push({
+  //         issueId,
+  //         issueKey: issue.key,
+  //         summary: issue.fields.summary,
+  //         worklogs,
+  //       });
+  //     }
+  
+  //     console.log(assigneeIssues);
+  
+  //     // Clear existing data in the MongoDB collection
+  //     await Assignee.deleteMany({});
+  
+  //     // Save data to MongoDB collection
+  //     const savedAssignees = await Assignee.create(Object.entries(assigneeIssues).map(([assigneeEmail, assigneeData]) => ({
+  //       assigneeEmail,
+  //       assigneeName: assigneeData.assigneeName,
+  //       issues: assigneeData.issues,
+  //     })));
+  
+  //     console.log('Data saved to MongoDB:', savedAssignees);
+  
+  //     const assigneeIssuesJSON = JSON.stringify(assigneeIssues);
+  //     return res.send(assigneeIssuesJSON);
+  //   } catch (error) {
+  //     console.log('FAILED TO CONNECT!', error);
+  //     // Handle the error and send an appropriate response
+  //     return res.status(500).send('Failed to fetch and save issues.');
+  //   }
+  // }
+
+
+
+
+
+
+  // export async function getIssues(req, res) {
+  //   try {
+  //     const jiraApiUrl = 'https://avaxia.atlassian.net/rest/api/3/search?maxResults=1000';
+  //     const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`;
+  
+  //     const response = await fetch(jiraApiUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' } });
+  //     const issuesData = await response.json();
+  //     const issues = issuesData.issues;
+  
+  //     const projectIssues = {};
+  
+  //     for (const issue of issues) {
+  //       const issueId = issue.id;
+  //       const assignee = issue.fields.assignee;
+  //       const assigneeEmail = assignee ? assignee.emailAddress : 'Unassigned';
+  //       const assigneeName = assignee ? assignee.displayName : 'Unassigned';
+  //       const projectName = issue.fields.project.name; // Get the project name
+  
+  //       // Retrieve worklogs for each issue
+  //       const worklogsUrl = `https://avaxia.atlassian.net/rest/api/3/issue/${issueId}/worklog`;
+  //       try {
+  //         const worklogsResponse = await fetch(worklogsUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' } });
+  //         const worklogsData = await worklogsResponse.json();
+  //         const worklogs = worklogsData.worklogs;
+  
+  //         // Group issues and worklogs by assignee email
+  //         if (!projectIssues[projectName]) {
+  //           projectIssues[projectName] = {};
+  //         }
+  
+  //         if (!projectIssues[projectName][assigneeEmail]) {
+  //           projectIssues[projectName][assigneeEmail] = {
+  //             assigneeName,
+  //             issues: [],
+  //           };
+  //         }
+  
+  //         projectIssues[projectName][assigneeEmail].issues.push({
+  //           issueId,
+  //           issueKey: issue.key,
+  //           summary: issue.fields.summary,
+  //           worklogs,
+  //         });
+  //       } catch (error) {
+  //         console.error(`Failed to fetch issues for project: ${projectName}`, error.stack || error.message || error);
+  //         // Log the error and continue to the next issue
+  //       }
+  //     }
+  
+  //     console.log(projectIssues);
+  
+  //     const projectIssuesJSON = JSON.stringify(projectIssues);
+  //     return res.send(projectIssuesJSON);
+  //   } catch (error) {
+  //     console.error('FAILED TO CONNECT!', error.stack || error.message || error);
+  //     // Handle the error and send an appropriate response
+  //     return res.status(500).send('Failed to fetch issues.');
+  //   }
+  // }
+  
+  // export async function getIssues(req, res) {
+  //   try {
+  //     // Get the start and end dates for the current week (from Monday to Sunday)
+  //     const currentDate = new Date();
+  //     const startOfWeek = new Date(currentDate);
+  //     startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 1); // Set to Monday
+  //     const endOfWeek = new Date(currentDate);
+  //     endOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 7); // Set to Sunday
+  
+  //     // Format the start and end dates in Jira date format (yyyy-mm-dd)
+  //     const startOfWeekFormatted = startOfWeek.toISOString().split('T')[0];
+  //     const endOfWeekFormatted = endOfWeek.toISOString().split('T')[0];
+  
+  //     // Construct the JQL query with the date range for the current week
+  //     const jqlQuery = `createdDate >= ${startOfWeekFormatted} AND createdDate <= ${endOfWeekFormatted}`;
+  
+  //     const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=${encodeURIComponent(jqlQuery)}&maxResults=1000`;
+  //     const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`;
+  
+  //     const response = await fetch(jiraApiUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' } });
+  //     const issuesData = await response.json();
+  //     const issues = issuesData.issues;
+  
+  //     const projectIssues = {};
+  
+  //     for (const issue of issues) {
+  //       const issueId = issue.id;
+  //       const assignee = issue.fields.assignee;
+  //       const assigneeEmail = assignee ? assignee.emailAddress : 'Unassigned';
+  //       const assigneeName = assignee ? assignee.displayName : 'Unassigned';
+  //       const projectName = issue.fields.project.name; // Get the project name
+  
+  //       // Retrieve worklogs for each issue
+  //       const worklogsUrl = `https://avaxia.atlassian.net/rest/api/3/issue/${issueId}/worklog`;
+  //       try {
+  //         const worklogsResponse = await fetch(worklogsUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' } });
+  //         const worklogsData = await worklogsResponse.json();
+  //         const worklogs = worklogsData.worklogs;
+  
+  //         // Group issues and worklogs by assignee email
+  //         if (!projectIssues[projectName]) {
+  //           projectIssues[projectName] = {};
+  //         }
+  
+  //         if (!projectIssues[projectName][assigneeEmail]) {
+  //           projectIssues[projectName][assigneeEmail] = {
+  //             assigneeName,
+  //             issues: [],
+  //           };
+  //         }
+  
+  //         projectIssues[projectName][assigneeEmail].issues.push({
+  //           issueId,
+  //           issueKey: issue.key,
+  //           summary: issue.fields.summary,
+  //           worklogs,
+  //         });
+  //       } catch (error) {
+  //         console.error(`Failed to fetch issues for project: ${projectName}`, error.stack || error.message || error);
+  //         // Log the error and continue to the next issue
+  //       }
+  //     }
+  
+  //     console.log(projectIssues);
+  
+  //     const projectIssuesJSON = JSON.stringify(projectIssues);
+  //     return res.send(projectIssuesJSON);
+  //   } catch (error) {
+  //     console.error('FAILED TO CONNECT!', error.stack || error.message || error);
+  //     // Handle the error and send an appropriate response
+  //     return res.status(500).send('Failed to fetch issues.');
+  //   }
+  // }
+  
+  // async function getAllAssignees(req, res) {
+  //   try {
+  //     const assignees = await Assignee.find();
+  //     res.send(assignees);
+  //   } catch (error) {
+  //     console.log('Failed to retrieve data from MongoDB:', error);
+  //     res.status(500).send('Failed to retrieve data.');
+  //   }
+  // }
+  // export async function getAllShifts(request, response) {
+  //   try {
+  //     const shifts = await Shift.find();
+  //     response.json({ shifts });
+  //   } catch (error) {
+  //     console.log(error);
+  //     response.status(500).send('Failed to fetch shifts from the database.');
+  //   }
+  // }
+  export async function getIssuesForCurrentWeek(req, res) {
+    try {
+      const today = new Date();
+      const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
+  
+      // Calculate the start and end dates of the current week (Monday to Sunday midnight)
+      const startDate = new Date(today);
+      startDate.setDate(today.getDate() - currentDay + 1); // Set to Monday of the current week
+      startDate.setHours(0, 0, 0, 0); // Set time to midnight
+  
+      const endDate = new Date(today);
+      endDate.setDate(startDate.getDate() + 6); // Set to Sunday of the current week
+      endDate.setHours(23, 59, 59, 999); // Set time to Sunday midnight
+  
+      // Format the dates as ISO strings to use in the Jira JQL
+      const formattedStartDate = startDate.toISOString();
+      const formattedEndDate = endDate.toISOString();
+  
+      const projectsApiUrl = 'https://avaxia.atlassian.net/rest/api/3/project';
+      const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`;
+  
+      const projectsResponse = await fetch(projectsApiUrl, {
+        method: 'GET',
+        headers: { 'Authorization': authHeader, 'Accept': 'application/json' }
+      });
+      const projectsData = await projectsResponse.json();
+  
+      const projectsWithIssues = {};
+  
+      for (const project of projectsData) {
+        const projectKey = project.key;
+  
+        const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=${projectKey} AND created >= ${formattedStartDate} AND created <= ${formattedEndDate}&maxResults=1000`;
+  
+        const response = await fetch(jiraApiUrl, {
+          method: 'GET',
+          headers: { 'Authorization': authHeader, 'Accept': 'application/json' }
+        });
+        const issuesData = await response.json();
+        const issues = issuesData.issues;
+  
+        for (const issue of issues) {
+          const assignee = issue.fields.assignee;
+          const assigneeAccountId = assignee ? assignee.accountId : undefined;
+          const assigneeEmail = assignee ? assignee.emailAddress : undefined;
+          const assigneeDisplayName = assignee ? assignee.displayName : undefined;
+          const issueId = issue.id;
+          const issueKey = issue.key;
+          const summary = issue.fields.summary;
+  
+          // Retrieve worklogs for each issue
+          const worklogsUrl = `https://avaxia.atlassian.net/rest/api/3/issue/${issueId}/worklog`;
+  
+          // Rest of the code remains the same as before
+  
+          // ...
+        }
+      }
+  
+      // Respond with the organized projects data
+      return res.json(projectsWithIssues);
+    } catch (error) {
+      console.error('FAILED TO CONNECT!', error.stack || error.message || error);
+      // Handle the error and send an appropriate response
+      return res.status(500).send('Failed to fetch issues.');
+    }
+  }
+  
+
+
+
+  // export async function getIssues(req, res) {
+  //   try {
+  //     const today = new Date();
+  //     const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
+  
+  //     // Calculate the start and end dates of the current week (Monday to Sunday midnight)
+  //     const startDate = new Date(today);
+  //     startDate.setDate(today.getDate() - currentDay + 1); // Set to Monday of the current week
+  //     startDate.setHours(0, 0, 0, 0); // Set time to midnight
+  
+  //     const endDate = new Date(today);
+  //     endDate.setDate(startDate.getDate() + 6); // Set to Sunday of the current week
+  //     endDate.setHours(23, 59, 59, 999); // Set time to Sunday midnight
+  
+  //     // Format the dates as Jira date strings (YYYY-MM-DDTHH:MM:SS.sssZ)
+  //     const formattedStartDate = startDate.toISOString();
+  //     const formattedEndDate = endDate.toISOString();
+
+
+      
+
+  //   const startD = `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}-${startDate.getDate().toString().padStart(2, '0')}`;
+  //   const endD = `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}`;
+    
+  //   const addeddate='T00:00:00.000Z';
+
+  //   const startDD = startD.concat(addeddate);
+  //   const endDD = endD.concat(addeddate);
+
+      
+  
+  //     const projectsApiUrl = 'https://avaxia.atlassian.net/rest/api/3/project';
+  //     const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`;
+  
+  //     const projectsResponse = await fetch(projectsApiUrl, {
+  //       method: 'GET',
+  //       headers: { 'Authorization': authHeader, 'Accept': 'application/json' }
+  //     });
+  //     const projectsData = await projectsResponse.json();
+  
+  //     await Promise.all(projectsData.map(async (project) => {
+  //       const projectName = project.name;
+  //       const projectId = project.id;
+  
+  //       let startAt = 0;
+  //       const maxResults = 100; // Number of issues to fetch per batch
+  
+  //       while (true) {
+  //         const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=${projectId}&maxResults=${maxResults}&startAt=${startAt}`;
+  //         const response = await fetch(jiraApiUrl, {
+  //           method: 'GET',
+  //           headers: { 'Authorization': authHeader, 'Accept': 'application/json' }
+  //         });
+  //         const issuesData = await response.json();
+  //         const issues = issuesData.issues;
+  
+  //         for (const issue of issues) {
+  //           const assignee = issue.fields.assignee;
+  //           const assigneeAccountId = assignee ? assignee.accountId : undefined;
+  //           const assigneeEmail = assignee ? assignee.emailAddress : undefined;
+  //           const assigneeDisplayName = assignee ? assignee.displayName : undefined;
+  //           const issueId = issue.id;
+  //           const issueKey = issue.key;
+  //           const summary = issue.fields.summary;
+  
+  //           // Retrieve worklogs for each issue
+  //           const worklogsUrl = `https://avaxia.atlassian.net/rest/api/3/issue/${issueId}/worklog`;
+  //           try {
+  //             const worklogsResponse = await fetch(worklogsUrl, {
+  //               method: 'GET',
+  //               headers: { 'Authorization': authHeader, 'Accept': 'application/json' }
+  //             });
+  //             const worklogsData = await worklogsResponse.json();
+  //             const filteredWorklogs = worklogsData.worklogs.filter(worklog => {
+  //               const startedDate = new Date(worklog.started);
+  //               return startedDate >= startDate && startedDate <= endDate;
+  //             });
+  
+  //             if (!filteredWorklogs.length) {
+  //               continue; // Skip the issue if there are no relevant worklogs
+  //             }
+  
+  //             // Save or update the data in the database
+  //             const existingIssue = await Issue.findOne({
+  //               week:{
+  //               startDate: startDD,
+  //               endDate: endDD,
+  //               },
+  //               projectName,
+  //               assigneeAccountId,
+  //             });
+  
+  //             if (existingIssue) {
+  //               const existingIssueToUpdate = existingIssue.issues.find(issue => issue.issueId === issueId);
+  //               if (existingIssueToUpdate) {
+  //                 // Update the existing issue's worklogs
+  //                 existingIssueToUpdate.worklogs = filteredWorklogs.map(worklog => ({
+  //                   created: worklog.created,
+  //                   updated: worklog.updated,
+  //                   timeSpent: worklog.timeSpent,
+  //                   started: worklog.started,
+  //                 }));
+  //               } else {
+  //                 // Add a new issue to the existing issues array
+  //                 existingIssue.issues.push({
+  //                   issueId,
+  //                   issueKey,
+  //                   summary,
+  //                   worklogs: filteredWorklogs.map(worklog => ({
+  //                     created: worklog.created,
+  //                     updated: worklog.updated,
+  //                     timeSpent: worklog.timeSpent,
+  //                     started: worklog.started,
+  //                   })),
+  //                 });
+  //               }
+  //               await existingIssue.save();
+  //             } else {
+  //               const newIssue = new Issue({
+  //                 week:{
+  //                   startDate: startDD,
+  //                 endDate: endDD,
+  //                 },
+  //                 projectName,
+  //                 assigneeAccountId,
+  //                 displayName: assigneeDisplayName,
+  //                 email: assigneeEmail,
+  //                 issues: [{
+  //                   issueId,
+  //                   issueKey,
+  //                   summary,
+  //                   worklogs: filteredWorklogs.map(worklog => ({
+  //                     created: worklog.created,
+  //                     updated: worklog.updated,
+  //                     timeSpent: worklog.timeSpent,
+  //                     started: worklog.started,
+  //                   })),
+  //                 }],
+  //               });
+  //               await newIssue.save();
+  //             }
+  //           } catch (error) {
+  //             console.error(`Failed to fetch worklogs for issue: ${issueKey}`, error.stack || error.message || error);
+  //             // Log the error and continue to the next issue
+  //           }
+  //         }
+  
+  //         if (issues.length < maxResults) {
+  //           break; // No more issues to fetch
+  //         }
+  
+  //         startAt += maxResults;
+  //       }
+  //     }));
+  
+  //     // Respond with a success message
+  //     return res.status(200).send('Data saved and updated successfully.');
+  //   } catch (error) {
+  //     console.error('FAILED TO CONNECT!', error.stack || error.message || error);
+  //     // Handle the error and send an appropriate response
+  //     return res.status(500).send('Failed to fetch issues.');
+  //   }
+  // }
+
+  export async function getIssueDataForCurrentWeek(request , res) {
+    try {
+
+      // Calculate the start and end dates of the current week (Monday to Sunday)
+      const today = new Date();
+      const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
+      const startDate = new Date(today);
+      startDate.setDate(today.getDate() - currentDay + 1); // Set to Monday of the current week
+      startDate.setHours(0, 0, 0, 0); // Set time to midnight
+      const endDate = new Date(today);
+      endDate.setDate(startDate.getDate() + 6); // Set to Sunday of the current week
+      endDate.setHours(23, 59, 59, 999); // Set time to Sunday midnight
+  
+      // Retrieve issues for the current week
+    const issues = await Issue.find({
+      startDate: { $gte: startDate, $lte: endDate },
+    });
+
+    // Construct the JSON response
+    const responseData = {
+      startDate: startDate,
+      endDate: endDate,
+      issues: issues,
+    };
+
+    return res.status(200).json(responseData);
+    } catch (error) {
+      console.error('Failed to fetch data from the database:', error);
+      response.status(500).send('Failed to fetch data from the database.');
+    }
+  }
+  
 
 
   export async function getIssues(req, res) {
     try {
-      const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=DIN&maxResults=1000`;
+      const today = new Date();
+      const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
+  
+      const startDate = new Date(today);
+      startDate.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+      startDate.setHours(0, 0, 0, 0);
+  
+      const endDate = new Date(today);
+      endDate.setDate(startDate.getDate() + 7); // Set to next Sunday midnight
+      endDate.setHours(23, 59, 59, 999);
+  
+      const projectsApiUrl = 'https://avaxia.atlassian.net/rest/api/3/project';
       const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`;
   
-      const response = await fetch(jiraApiUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' } });
-      const issuesData = await response.json();
-      const issues = issuesData.issues;
+      const projectsResponse = await fetch(projectsApiUrl, {
+        method: 'GET',
+        headers: { 'Authorization': authHeader, 'Accept': 'application/json' }
+      });
+      const projectsData = await projectsResponse.json();
   
+      const response = [];
+  
+      await Promise.all(projectsData.map(async (project) => {
+        const projectName = project.name;
+        const projectId = project.id;
+  
+        let startAt = 0;
+        const maxResults = 100;
+  
+        const projectObject = {
+          projectName: projectName,
+          users: [] // Create an array to hold user data
+        };
+  
+        while (true) {
+          const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=${projectId}&maxResults=${maxResults}&startAt=${startAt}`;
+          const response = await fetch(jiraApiUrl, {
+            method: 'GET',
+            headers: { 'Authorization': authHeader, 'Accept': 'application/json' }
+          });
+          const issuesData = await response.json();
+          const issues = issuesData.issues;
+  
+          for (const issue of issues) {
+            const assignee = issue.fields.assignee;
+            const assigneeAccountId = assignee ? assignee.accountId : undefined;
+            const assigneeEmail = assignee ? assignee.emailAddress : undefined;
+            const assigneeDisplayName = assignee ? assignee.displayName : undefined;
+            const issueId = issue.id;
+            const issueKey = issue.key;
+            const summary = issue.fields.summary;
+  
+            const worklogsUrl = `https://avaxia.atlassian.net/rest/api/3/issue/${issueId}/worklog`;
+            try {
+              const worklogsResponse = await fetch(worklogsUrl, {
+                method: 'GET',
+                headers: { 'Authorization': authHeader, 'Accept': 'application/json' }
+              });
+              const worklogsData = await worklogsResponse.json();
+              const filteredWorklogs = worklogsData.worklogs.filter(worklog => {
+                const startedDate = new Date(worklog.started);
+                return startedDate >= startDate && startedDate <= endDate;
+              });
+  
+              if (!filteredWorklogs.length) {
+                continue;
+              }
+  
+              const issueObject = {
+                issueId: issueId,
+                issueKey: issueKey,
+                summary: summary,
+                worklogs: filteredWorklogs.map(worklog => ({
+                  created: worklog.created,
+                  updated: worklog.updated,
+                  timeSpent: worklog.timeSpent,
+                  started: worklog.started,
+                }))
+              };
+  
+              const userObject = {
+                displayName: assigneeDisplayName,
+                email: assigneeEmail,
+                issues: [issueObject] // Initialize the issues array for the user
+              };
+  
+              // Check if the user already exists in the projectObject
+              const existingUser = projectObject.users.find(user => user.email === assigneeEmail);
+              if (existingUser) {
+                existingUser.issues.push(issueObject);
+              } else {
+                projectObject.users.push(userObject);
+              }
+            } catch (error) {
+              console.error(`Failed to fetch worklogs for issue: ${issueKey}`, error.stack || error.message || error);
+            }
+          }
+  
+          if (issues.length < maxResults) {
+            break;
+          }
+  
+          startAt += maxResults;
+        }
+  
+        response.push(projectObject);
+      }));
+  
+      return res.status(200).json(response);
+    } catch (error) {
+      console.error('FAILED TO CONNECT!', error.stack || error.message || error);
+      return res.status(500).send('Failed to fetch issues.');
+    }
+  }
+  
+  
+  
+ 
+    
+    // export async function getShiftsForCurrentWeek(request, response) {
+    //   try {
+    //     // Set your app credentials and desired permissions
+    //     let data = qs.stringify({
+    //       'grant_type': 'client_credentials',
+    //       'client_id': 'd9452d4b-7b90-49cb-96a9-dbd03bbbc1ec',
+    //       'state': '12345',
+    //       'scope': 'https://graph.microsoft.com/.default',
+    //       'client_secret': 'uo6k~B1F.2_yA~O5Mqf5rLMCP0KgXS14_Y',
+    //       '': ''
+    //     });
+    
+    //     let tokenConfig = {
+    //       method: 'post',
+    //       maxBodyLength: Infinity,
+    //       url: 'https://login.microsoftonline.com/7ecf1dcb-eca3-4727-8201-49cf4c94b669/oauth2/v2.0/token',
+    //       headers: {
+    //         'Content-Type': 'application/x-www-form-urlencoded'
+    //       },
+    //       data: data
+    //     };
+    
+    //     const tokenResponse = await axios.request(tokenConfig);
+    //     const accessToken = tokenResponse.data.access_token;
+    
+    //     // Calculate the date range for the current week (from Monday to Sunday)
+    //     const today = new Date();
+    //     const startOfWeek = new Date(today);
+    //     startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Set to Monday
+    //     const endOfWeek = new Date(today);
+    //     endOfWeek.setDate(today.getDate() - today.getDay() + 7); // Set to Sunday
+    
+    //     let shiftsConfig = {
+    //       method: 'get',
+    //       maxBodyLength: Infinity,
+    //       url: `https://graph.microsoft.com/v1.0/teams/d9f935aa-0d31-403d-9d4f-33728253b85a/schedule/shifts?$filter=sharedShift/startDateTime ge ${startOfWeek.toISOString()} and sharedShift/endDateTime le ${endOfWeek.toISOString()}`,
+    //       headers: {
+    //         'MS-APP-ACTS-AS': 'nassim.jloud@avaxia-group.com',
+    //         'Authorization': 'Bearer ' + accessToken
+    //       }
+    //     };
+    //     const shiftsResponse = await axios.request(shiftsConfig);
+    //     const shiftsData = shiftsResponse.data;
+    
+    //     if (shiftsData && shiftsData.value && Array.isArray(shiftsData.value)) {
+    //       // Organize the shifts data into groups (each group contains users, and each user has their shifts)
+    //       const shiftsByGroup = {};
+    
+    //       shiftsData.value.forEach((shiftData) => {
+    //         const sharedShift = shiftData.sharedShift || {};
+    //         const groupId = shiftData.schedulingGroupId;
+    //         const userId = shiftData.userId;
+    
+    //         if (!shiftsByGroup[groupId]) {
+    //           shiftsByGroup[groupId] = {};
+    //         }
+    
+    //         if (!shiftsByGroup[groupId][userId]) {
+    //           shiftsByGroup[groupId][userId] = {
+    //             displayName: sharedShift.displayName,
+    //             shifts: [],
+    //           };
+    //         }
+    
+    //         shiftsByGroup[groupId][userId].shifts.push({
+    //           id: shiftData.id,
+    //           etag: shiftData['@odata.etag'],
+    //           createdDateTime: shiftData.createdDateTime,
+    //           lastModifiedDateTime: shiftData.lastModifiedDateTime,
+    //           startDateTime: sharedShift.startDateTime,
+    //           endDateTime: sharedShift.endDateTime,
+    //           theme: sharedShift.theme,
+    //           notes: sharedShift.notes,
+    //           activities: sharedShift.activities,
+    //           lastModifiedBy: shiftData.lastModifiedBy,
+    //         });
+    //       });
+    
+    //       // Respond with the organized shifts data by group
+    //       response.json(shiftsByGroup);
+    //     } else {
+    //       throw new Error('Invalid shifts data received');
+    //     }
+    //   } catch (error) {
+    //     console.log(error);
+    //     response.status(500).send('Failed to fetch and save data.');
+    //   }
+    // }
+    
+    
+
+
+export async function getShiftsForCurrentWeek(request, response) {
+  try {
+    // Set your app credentials and desired permissions
+    let data = qs.stringify({
+      'grant_type': 'client_credentials',
+      'client_id': 'd9452d4b-7b90-49cb-96a9-dbd03bbbc1ec',
+      'state': '12345',
+      'scope': 'https://graph.microsoft.com/.default',
+      'client_secret': 'uo6k~B1F.2_yA~O5Mqf5rLMCP0KgXS14_Y',
+      '': ''
+    });
+
+    let tokenConfig = {
+      method: 'post',
+      maxBodyLength: Infinity,
+      url: 'https://login.microsoftonline.com/7ecf1dcb-eca3-4727-8201-49cf4c94b669/oauth2/v2.0/token',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      data: data
+    };
+
+    const tokenResponse = await axios.request(tokenConfig);
+    const accessToken = tokenResponse.data.access_token;
+
+    // Calculate the date range for the current week (from Monday to Sunday)
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Set to Monday
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(today.getDate() - today.getDay() + 7); // Set to Sunday
+
+    let shiftsConfig = {
+      method: 'get',
+      maxBodyLength: Infinity,
+      url: `https://graph.microsoft.com/v1.0/teams/d9f935aa-0d31-403d-9d4f-33728253b85a/schedule/shifts?$filter=sharedShift/startDateTime ge 2023-03-10T00:00:00.000Z and sharedShift/endDateTime le 2023-03-11T00:00:00.000Z`,
+      headers: {
+        'MS-APP-ACTS-AS': 'nassim.jloud@avaxia-group.com',
+        'Authorization': 'Bearer ' + accessToken
+      }
+    };
+    const shiftsResponse = await axios.request(shiftsConfig);
+    const shiftsData = shiftsResponse.data;
+
+    if (shiftsData && shiftsData.value && Array.isArray(shiftsData.value)) {
+      // Organize the shifts data into groups (each group contains users, and each user has their shifts)
+      const shiftsByGroup = {};
+
+      for (const shiftData of shiftsData.value) {
+        const sharedShift = shiftData.sharedShift || {};
+        const groupId = shiftData.schedulingGroupId;
+        const userId = shiftData.userId;
+        const userEmail = await getUserEmail(userId, accessToken); // Fetch user email using the Microsoft Graph API
+
+        if (!shiftsByGroup[groupId]) {
+          shiftsByGroup[groupId] = {};
+        }
+
+        if (!shiftsByGroup[groupId][userId]) {
+          shiftsByGroup[groupId][userId] = {
+            displayName: sharedShift.displayName,
+            email: userEmail, // Include the email here
+            shifts: [],
+          };
+        }
+
+        shiftsByGroup[groupId][userId].shifts.push({
+          id: shiftData.id,
+          etag: shiftData['@odata.etag'],
+          createdDateTime: shiftData.createdDateTime,
+          lastModifiedDateTime: shiftData.lastModifiedDateTime,
+          startDateTime: sharedShift.startDateTime,
+          endDateTime: sharedShift.endDateTime,
+          theme: sharedShift.theme,
+          notes: sharedShift.notes,
+          activities: sharedShift.activities,
+          lastModifiedBy: shiftData.lastModifiedBy,
+        });
+      }
+
+      // Respond with the organized shifts data by group
+      response.json(shiftsByGroup);
+    } else {
+      throw new Error('Invalid shifts data received');
+    }
+  } catch (error) {
+    console.log(error);
+    response.status(500).send('Failed to fetch and save data.');
+  }
+}
+
+// Function to fetch user email using Microsoft Graph API
+async function getUserEmail(userId, accessToken) {
+  try {
+    const authProvider = {
+      getAccessToken: () => Promise.resolve(accessToken),
+    };
+
+    const options = {
+      authProvider,
+    };
+
+    const client = Client.init(options);
+    const user = await client.api(`/users/${userId}`).get();
+    return user.mail || '';
+  } catch (error) {
+    console.log(`Failed to fetch email for user with ID: ${userId}`);
+    return '';
+  }
+}
+
+    
+    
+    
+
+
+
+
+export async function getIssuesForTheCurrentWeek(req, res) {
+  try {
+    // Calculate the date range for the current week (from Monday to Sunday)
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Set to Monday
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(today.getDate() - today.getDay() + 7); // Set to Sunday
+    const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/?jql/project=DIN&maxResults=1000`;
+    /*created >= ${startOfWeek.toISOString()} and created <= ${endOfWeek.toISOString()}*/
+    const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`;
+    const response = await fetch(jiraApiUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' } });
+    const issuesData = await response.json();
+   
+
+    if (issuesData && issuesData.issues && Array.isArray(issuesData.issues)) {
       const assigneeIssues = {};
-  
-      for (const issue of issues) {
+      for (const issue of issuesData.issues) {
         const issueId = issue.id;
         const assignee = issue.fields.assignee;
         const assigneeEmail = assignee ? assignee.emailAddress : 'Unassigned';
         const assigneeName = assignee ? assignee.displayName : 'Unassigned';
-  
+        
+
         // Retrieve worklogs for each issue
         const worklogsUrl = 'https://avaxia.atlassian.net/rest/api/3/issue/' + issueId + '/worklog';
         const worklogsResponse = await fetch(worklogsUrl, { method: 'GET', headers: { 'Authorization': authHeader, 'Accept': 'application/json' } });
         const worklogsData = await worklogsResponse.json();
         const worklogs = worklogsData.worklogs;
-  
+
         // Group issues and worklogs by assignee email
         if (!assigneeIssues[assigneeEmail]) {
           assigneeIssues[assigneeEmail] = {
@@ -260,7 +1203,7 @@ export const assigneeSchema = new mongoose.Schema({
             issues: [],
           };
         }
-  
+
         assigneeIssues[assigneeEmail].issues.push({
           issueId,
           issueKey: issue.key,
@@ -268,160 +1211,535 @@ export const assigneeSchema = new mongoose.Schema({
           worklogs,
         });
       }
-  
       console.log(assigneeIssues);
-  
-      // Clear existing data in the MongoDB collection
-      await Assignee.deleteMany({});
-  
-      // Save data to MongoDB collection
-      const savedAssignees = await Assignee.create(Object.entries(assigneeIssues).map(([assigneeEmail, assigneeData]) => ({
-        assigneeEmail,
-        assigneeName: assigneeData.assigneeName,
-        issues: assigneeData.issues,
-      })));
-  
-      console.log('Data saved to MongoDB:', savedAssignees);
-  
-      const assigneeIssuesJSON = JSON.stringify(assigneeIssues);
-      return res.send(assigneeIssuesJSON);
-    } catch (error) {
-      console.log('FAILED TO CONNECT!', error);
-      // Handle the error and send an appropriate response
-      return res.status(500).send('Failed to fetch and save issues.');
+      // Respond with the formatted shifts data
+      res.json(assigneeIssues);
+    } else {
+      throw new Error('No issues found for the current week.');
     }
+  } catch (error) {
+    console.log('FAILED TO CONNECT!', error);
+    // Handle the error and send an appropriate response
+    res.status(500).send('Failed to fetch issues for the current week.');
   }
-  
-  async function getAllAssignees(req, res) {
-    try {
-      const assignees = await Assignee.find();
-      res.send(assignees);
-    } catch (error) {
-      console.log('Failed to retrieve data from MongoDB:', error);
-      res.status(500).send('Failed to retrieve data.');
-    }
-  }
-  export async function getAllShifts(request, response) {
-    try {
-      const shifts = await Shift.find();
-  
-      response.json({ shifts });
-    } catch (error) {
-      console.log(error);
-      response.status(500).send('Failed to fetch shifts from the database.');
-    }
-  }
+}
+
+
+
+
+
+
+// export async function getIssuesForTheCurrentWeek(req, res) {
+//   try {
+//     const baseUrl = 'https://avaxia.atlassian.net';
+//     const jiraApiUrl = `${baseUrl}/rest/api/3/search`;
+//     const tempoApiUrl = `${baseUrl}/rest/tempo-timesheets/4/worklogs`;
+//     const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`;
+
+//     // Calculate the date range for the current week (from Monday to Sunday)
+//     const today = new Date();
+//     const startOfWeek = new Date(today);
+//     startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Set to Monday
+//     const endOfWeek = new Date(today);
+//     endOfWeek.setDate(today.getDate() - today.getDay() + 7); // Set to Sunday
+
+//     // Fetch issues using Jira REST API
+//     const jiraIssuesResponse = await axios.get(jiraApiUrl, {
+//       headers: {
+//         'Authorization': authHeader,
+//         'Accept': 'application/json',
+//       },
+//       params: {
+//         jql: `created >= ${startOfWeek.toISOString()} OR updated >= ${startOfWeek.toISOString()}`,
+//         maxResults: 1000,
+//       },
+//     });
+
+//     const jiraIssuesData = jiraIssuesResponse.data;
+//     const jiraIssues = jiraIssuesData.issues || [];
+
+//     // Fetch worklogs using Tempo Timesheets API
+//     const worklogsResponse = await axios.get(tempoApiUrl, {
+//       headers: {
+//         'Authorization': authHeader,
+//         'Accept': 'application/json',
+//       },
+//       params: {
+//         dateFrom: startOfWeek.toISOString(),
+//         dateTo: endOfWeek.toISOString(),
+//       },
+//     });
+
+//     const worklogsData = worklogsResponse.data || [];
+
+//     // Group issues and worklogs by assignee email
+//     const assigneeIssues = {};
+
+//     for (const issue of jiraIssues) {
+//       const issueId = issue.id;
+//       const assignee = issue.fields.assignee;
+
+//       if (assignee && assignee.emailAddress) {
+//         const assigneeEmail = assignee.emailAddress;
+//         const assigneeName = assignee.displayName || 'Unassigned';
+
+//         const worklogs = worklogsData.filter((worklog) => worklog.issue.id === issueId);
+
+//         if (!assigneeIssues[assigneeEmail]) {
+//           assigneeIssues[assigneeEmail] = {
+//             assigneeName,
+//             issues: [],
+//           };
+//         }
+
+//         assigneeIssues[assigneeEmail].issues.push({
+//           issueId,
+//           issueKey: issue.key,
+//           summary: issue.fields.summary,
+//           worklogs,
+//         });
+//       }
+//     }
+
+//     console.log(assigneeIssues);
+//     // Respond with the formatted shifts data
+//     res.json(assigneeIssues);
+//   } catch (error) {
+//     console.log('FAILED TO CONNECT!', error);
+//     // Handle the error and send an appropriate response
+//     res.status(500).send('Failed to fetch issues for the current week.');
+//   }
+// }
 
 
 
   
+  
 
-  export async function getShiftsForCurrentWeek(request, response) {
-    try {
-      const today = new Date();
-      const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 1)); // Monday of the current week
-      const endOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 7)); // Sunday of the current week
+  // export async function getShiftsForCurrentWeek(request, response) {
+  //   try {
+  //     const today = new Date();
+  //     const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 1)); // Monday of the current week
+  //     const endOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 7)); // Sunday of the current week
   
-      const shifts = await Shift.find({
-        'sharedShift.startDateTime': { $gte: startOfWeek },
-        'sharedShift.endDateTime': { $lte: endOfWeek }
-      });
+  //     const shifts = await Shift.find({
+  //       'sharedShift.startDateTime': { $gte: startOfWeek },
+  //       'sharedShift.endDateTime': { $lte: endOfWeek }
+  //     });
   
-      if (shifts.length === 0) {
-        // Return empty array if no shifts found
-        response.json({ shifts: [] });
-      } else {
-        response.json({ shifts });
+  //     if (shifts.length === 0) {
+  //       // Return empty array if no shifts found
+  //       response.json({ shifts: [] });
+  //     } else {
+  //       response.json({ shifts });
+  //     }
+  //   } catch (error) {
+  //     console.log(error);
+  //     response.status(500).send('Failed to fetch shifts for the current week.');
+  //   }
+  // }
+  
+
+
+// 
+
+
+
+
+
+
+
+
+export async function getShiftsByDate(request, response) {
+  try {
+    // Set your app credentials and desired permissions
+    let data = qs.stringify({
+      'grant_type': 'client_credentials',
+      'client_id': 'd9452d4b-7b90-49cb-96a9-dbd03bbbc1ec',
+      'scope': 'https://graph.microsoft.com/.default',
+      'client_secret': 'uo6k~B1F.2_yA~O5Mqf5rLMCP0KgXS14_Y',
+    });
+
+    let tokenConfig = {
+      method: 'post',
+      maxBodyLength: Infinity,
+      url: 'https://login.microsoftonline.com/7ecf1dcb-eca3-4727-8201-49cf4c94b669/oauth2/v2.0/token',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      data: data
+    };
+
+    const tokenResponse = await axios.request(tokenConfig);
+    const accessToken = tokenResponse.data.access_token;
+
+    // Calculate the date range for the current week (from Monday to Sunday)
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Set to Monday
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(today.getDate() - today.getDay() + 7); // Set to Sunday
+    endOfWeek.setHours(23, 59, 59, 999); // Set to the end of Sunday
+
+    const startDateString = `${startOfWeek.toISOString()}`;
+    const endDateString = `${endOfWeek.toISOString()}`;
+
+
+
+
+
+
+
+
+
+
+
+    let shiftsConfig = {
+      method: 'get',
+      maxBodyLength: Infinity,
+      url: `https://graph.microsoft.com/v1.0/teams/d9f935aa-0d31-403d-9d4f-33728253b85a/schedule/shifts?$filter=sharedShift/startDateTime ge ${startDateString} and sharedShift/startDateTime le ${endDateString}`,
+      headers: {
+        'MS-APP-ACTS-AS': 'nassim.jloud@avaxia-group.com',
+        'Authorization': 'Bearer ' + accessToken
       }
-    } catch (error) {
-      console.log(error);
-      response.status(500).send('Failed to fetch shifts for the current week.');
-    }
-  }
-  
-  
-  
+    };
+    const shiftsResponse = await axios.request(shiftsConfig);
+    const shiftsData = shiftsResponse.data;
 
+    if (shiftsData && shiftsData.value && Array.isArray(shiftsData.value)) {
+      // Organize the shifts data into groups by date
+      const shiftsByDate = {};
 
-  
-  export async function connectMS(request, response) {
-    try {
-      // Set your app credentials and desired permissions
-      let data = qs.stringify({
-        'grant_type': 'client_credentials',
-        'client_id': 'd9452d4b-7b90-49cb-96a9-dbd03bbbc1ec',
-        'state': '12345',
-        'scope': 'https://graph.microsoft.com/.default',
-        'client_secret': 'uo6k~B1F.2_yA~O5Mqf5rLMCP0KgXS14_Y',
-        '': ''
-      });
-  
-      let tokenConfig = {
-        method: 'post',
-        maxBodyLength: Infinity,
-        url: 'https://login.microsoftonline.com/7ecf1dcb-eca3-4727-8201-49cf4c94b669/oauth2/v2.0/token',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        data: data
-      };
-  
-      const tokenResponse = await axios.request(tokenConfig);
-      const accessToken = tokenResponse.data.access_token;
-  
-      let shiftsConfig = {
-        method: 'get',
-        maxBodyLength: Infinity,
-        url: 'https://graph.microsoft.com/v1.0/teams/d9f935aa-0d31-403d-9d4f-33728253b85a/schedule/shifts?$filter=sharedShift/startDateTime ge 2023-03-10T00:00:00.000Z and sharedShift/endDateTime le 2023-03-11T00:00:00.000Z',
-        headers: {
-          'MS-APP-ACTS-AS': 'nassim.jloud@avaxia-group.com',
-          'Authorization': 'Bearer ' + accessToken
+      for (const shiftData of shiftsData.value) {
+        const sharedShift = shiftData.sharedShift || {};
+        const startDateTime = new Date(sharedShift.startDateTime);
+        const dateString = startDateTime.toISOString().split('T')[0];
+
+        if (!shiftsByDate[dateString]) {
+          shiftsByDate[dateString] = [];
         }
-      };
-  
-      const shiftsResponse = await axios.request(shiftsConfig);
-      const shiftsData = shiftsResponse.data;
-  
-      if (shiftsData && shiftsData.value && Array.isArray(shiftsData.value)) {
-        // Delete existing shifts from the database
-        await Shift.deleteMany({});
-  
-        // Process and save the new shifts data to the database
-        const shiftPromises = shiftsData.value.map(async (shiftData) => {
-          const shift = new Shift({
-            odataEtag: shiftData['@odata.etag'],
-            id: shiftData.id,
-            createdDateTime: shiftData.createdDateTime,
-            lastModifiedDateTime: shiftData.lastModifiedDateTime,
-            schedulingGroupId: shiftData.schedulingGroupId,
-            userId: shiftData.userId,
-            draftShift: shiftData.draftShift,
-            lastModifiedBy: shiftData.lastModifiedBy,
-            sharedShift: shiftData.sharedShift
-          });
-  
-          try {
-            const savedShift = await shift.save();
-            console.log('Shift saved:', savedShift);
-            return shift;
-          } catch (error) {
-            console.log('Failed to save shift:', error);
-            throw error; // Propagate the error to be caught later
-          }
+
+        shiftsByDate[dateString].push({
+          id: shiftData.id,
+          createdDateTime: shiftData.createdDateTime,
+          lastModifiedDateTime: shiftData.lastModifiedDateTime,
+          draftShift: shiftData.draftShift,
+          lastModifiedBy: shiftData.lastModifiedBy,
+          startDateTime: sharedShift.startDateTime,
+          endDateTime: sharedShift.endDateTime,
+          theme: sharedShift.theme,
+          notes: sharedShift.notes,
         });
-  
-        // Wait for all shift promises to resolve
-        const savedShifts = await Promise.all(shiftPromises);
-  
-        response.json({ shifts: savedShifts });
-      } else {
-        throw new Error('Invalid shifts data received');
       }
-    } catch (error) {
-      console.log(error);
-      response.status(500).send('Failed to fetch and save data.');
+       // Prepare the response data
+       const responseData = {
+        week: {
+          startOfWeek: startOfWeek.toISOString().split('T')[0],
+          endOfWeek: endOfWeek.toISOString().split('T')[0],
+        },
+        shiftsByGroup: shiftsByGroup,
+      };
+
+      response.json({ responseData });
+    } else {
+      throw new Error('Invalid shifts data received');
     }
+  } catch (error) {
+    console.log(error);
+    response.status(500).send('Failed to fetch and save data.');
   }
+}
+
+export async function connectMS(request, response) {
+  try {
+ 
+    // Set your app credentials and desired permissions
+    let data = qs.stringify({
+      'grant_type': 'client_credentials',
+      'client_id': 'd9452d4b-7b90-49cb-96a9-dbd03bbbc1ec',
+      'state': '12345',
+      'scope': 'https://graph.microsoft.com/.default',
+      'client_secret': 'uo6k~B1F.2_yA~O5Mqf5rLMCP0KgXS14_Y',
+      '': ''
+    });
+
+    let tokenConfig = {
+      method: 'post',
+      maxBodyLength: Infinity,
+      url: 'https://login.microsoftonline.com/7ecf1dcb-eca3-4727-8201-49cf4c94b669/oauth2/v2.0/token',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      data: data
+    };
+
+    const tokenResponse = await axios.request(tokenConfig);
+    const accessToken = tokenResponse.data.access_token;
+
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
+
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(startOfWeek.getDate() + 7); // Set to next Sunday midnight
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const startDateString = `${startOfWeek.getFullYear()}-${(startOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${startOfWeek.getDate().toString().padStart(2, '0')}`;
+    const endDateString = `${endOfWeek.getFullYear()}-${(endOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${endOfWeek.getDate().toString().padStart(2, '0')}`;
+    
+    const addeddate='T00:00:00.000Z';
+
+    const startDate = startDateString.concat(addeddate);
+    const endDate = endDateString.concat(addeddate);
+
+    
+
+
+
+
+
+    let shiftsConfig = {
+      method: 'get',
+      maxBodyLength: Infinity,
+      url: `https://graph.microsoft.com/v1.0/teams/d9f935aa-0d31-403d-9d4f-33728253b85a/schedule/shifts?$filter=sharedShift/startDateTime ge ${startDate} and sharedShift/endDateTime le ${endDate} `,
+      headers: {
+        'MS-APP-ACTS-AS': 'nassim.jloud@avaxia-group.com',
+        'Authorization': 'Bearer ' + accessToken
+      }
+    };
+    const shiftsResponse = await axios.request(shiftsConfig);
+    const shiftsData = shiftsResponse.data;
+
+    if (shiftsData && shiftsData.value && Array.isArray(shiftsData.value)) {
+      // Fetch user information for each user ID if permission is granted
+      const userIds = shiftsData.value.map((shiftData) => shiftData.userId);
+      const userDisplayNameMap = {};
+      const userEmailMap = {};
+
+      for (const userId of userIds) {
+        let displayName = userId; // Default to using userId as displayName
+        let email = null; // Initialize email as null
+
+        try {
+          const userConfig = {
+            method: 'get',
+            maxBodyLength: Infinity,
+            url: `https://graph.microsoft.com/v1.0/users/${userId}`,
+            headers: {
+              'Authorization': 'Bearer ' + accessToken
+            }
+          };
+          const userResponse = await axios.request(userConfig);
+          const userData = userResponse.data;
+          displayName = userData.displayName;
+          email = userData.mail; // Get the email from the user data
+        } catch (error) {
+          console.log('Failed to fetch user data:', error);
+        }
+
+        userDisplayNameMap[userId] = displayName;
+        userEmailMap[userId] = email;
+      }
+
+      // Organize the shifts data into groups (each group contains users, and each user has their shifts)
+      const shiftsByGroup = {};
+
+      for (const shiftData of shiftsData.value) {
+        const sharedShift = shiftData.sharedShift || {};
+        const groupId = shiftData.schedulingGroupId;
+        const userId = shiftData.userId;
+        const displayName = userDisplayNameMap[userId];
+        const email = userEmailMap[userId]; // Get the email for this user
+
+        if (!shiftsByGroup[groupId]) {
+          // Fetch the group name if it doesn't exist in the shiftsByGroup object
+          let groupName = groupId; // Default to using groupId as groupName
+
+          try {
+            const groupConfig = {
+              method: 'get',
+              maxBodyLength: Infinity,
+              url: `https://graph.microsoft.com/v1.0/groups/${groupId}`,
+              headers: {
+                'Authorization': 'Bearer ' + accessToken
+              }
+            };
+            const groupResponse = await axios.request(groupConfig);
+            const groupData = groupResponse.data;
+            groupName = groupData.displayName;
+          } catch (error) {
+            console.log('Failed to fetch group data:', error);
+          }
+
+          shiftsByGroup[groupId] = { groupName, users: {} };
+        }
+
+        if (!shiftsByGroup[groupId].users[userId]) {
+          shiftsByGroup[groupId].users[userId] = {
+            displayName,
+            email, // Include the email in the response
+            shifts: [],
+          };
+        }
+
+        shiftsByGroup[groupId].users[userId].shifts.push({
+          id: shiftData.id,
+          displayName:sharedShift.displayName,
+          createdDateTime: shiftData.createdDateTime,
+          lastModifiedDateTime: shiftData.lastModifiedDateTime,
+          lastModifiedBy: shiftData.lastModifiedBy,
+          startDateTime: sharedShift.startDateTime,
+          endDateTime: sharedShift.endDateTime,
+          notes: sharedShift.notes,
+        });
+      }
+
+   
+      // Prepare the response data
+      const responseData = {
+        week: {
+          startOfWeek: startDate,
+          endOfWeek: endDate,
+        },
+        shiftsByGroup: shiftsByGroup,
+      };
+      // Save or update the response data in the database
+    const existingData = await ShiftsByWeek.findOne({ startDate, endDate });
+    if (existingData) {
+      // Update existing entry
+      existingData.data = responseData;
+      await existingData.save();
+    } else {
+      // Create new entry
+      const newShiftsByWeek = new ShiftsByWeek({
+        startDate,
+        endDate,
+        data: shiftsByGroup,
+      });
+      await newShiftsByWeek.save();
+    }
+
+      response.json({ responseData });
+    } else {
+      throw new Error('Invalid shifts data received');
+    }
+  } catch (error) {
+    console.log(error);
+    response.status(500).send('Failed to fetch and save data.');
+  }
+}
+
+
+export async function getShiftsByWeekForCurrentWeek(request, response) {
+  try {
+
+    // Calculate the start and end dates of the current week (Monday to Sunday)
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - currentDay + 1); // Set to Monday of the current week
+    startDate.setHours(0, 0, 0, 0); // Set time to midnight
+    const endDate = new Date(today);
+    endDate.setDate(startDate.getDate() + 6); // Set to Sunday of the current week
+    endDate.setHours(23, 59, 59, 999); // Set time to Sunday midnight
+
+    // Fetch documents from the ShiftsByWeek collection for the current week
+    const shiftsByWeekData = await ShiftsByWeek.find({
+      'week.startDate': { $gte: startDate, $lte: endDate },
+    });
+
+
+
+    // Respond with the fetched data
+    response.json(shiftsByWeekData);
+  } catch (error) {
+    console.error('Failed to fetch data from the database:', error);
+    response.status(500).send('Failed to fetch data from the database.');
+  }
+}
+
+
+
+  
+  // export async function connectMS(request, response) {
+  //   try {
+  //     // Set your app credentials and desired permissions
+  //     let data = qs.stringify({
+  //       'grant_type': 'client_credentials',
+  //       'client_id': 'd9452d4b-7b90-49cb-96a9-dbd03bbbc1ec',
+  //       'state': '12345',
+  //       'scope': 'https://graph.microsoft.com/.default',
+  //       'client_secret': 'uo6k~B1F.2_yA~O5Mqf5rLMCP0KgXS14_Y',
+  //       '': ''
+  //     });
+  
+  //     let tokenConfig = {
+  //       method: 'post',
+  //       maxBodyLength: Infinity,
+  //       url: 'https://login.microsoftonline.com/7ecf1dcb-eca3-4727-8201-49cf4c94b669/oauth2/v2.0/token',
+  //       headers: {
+  //         'Content-Type': 'application/x-www-form-urlencoded'
+  //       },
+  //       data: data
+  //     };
+  
+  //     const tokenResponse = await axios.request(tokenConfig);
+  //     const accessToken = tokenResponse.data.access_token;
+  
+  //     let shiftsConfig = {
+  //       method: 'get',
+  //       maxBodyLength: Infinity,
+  //       url: 'https://graph.microsoft.com/v1.0/teams/d9f935aa-0d31-403d-9d4f-33728253b85a/schedule/shifts?$filter=sharedShift/startDateTime ge 2023-03-10T00:00:00.000Z and sharedShift/endDateTime le 2023-03-11T00:00:00.000Z',
+  //       headers: {
+  //         'MS-APP-ACTS-AS': 'nassim.jloud@avaxia-group.com',
+  //         'Authorization': 'Bearer ' + accessToken
+  //       }
+  //     };
+  //     const shiftsResponse = await axios.request(shiftsConfig);
+  //     const shiftsData = shiftsResponse.data;
+  
+  //     if (shiftsData && shiftsData.value && Array.isArray(shiftsData.value)) {
+  //       // Delete existing shifts from the database
+  //       await Shift.deleteMany({});
+  //       // Process and save the new shifts data to the database
+  //       const shiftPromises = shiftsData.value.map(async (shiftData) => {
+  //         const shift = new Shift({
+  //           odataEtag: shiftData['@odata.etag'],
+  //           id: shiftData.id,
+  //           createdDateTime: shiftData.createdDateTime,
+  //           lastModifiedDateTime: shiftData.lastModifiedDateTime,
+  //           schedulingGroupId: shiftData.schedulingGroupId,
+  //           userId: shiftData.userId,
+  //           draftShift: shiftData.draftShift,
+  //           lastModifiedBy: shiftData.lastModifiedBy,
+  //           sharedShift: shiftData.sharedShift
+  //         });
+  
+  //         try {
+  //           const savedShift = await shift.save();
+  //           console.log('Shift saved:', savedShift);
+  //           return shift;
+  //         } catch (error) {
+  //           console.log('Failed to save shift:', error);
+  //           throw error; // Propagate the error to be caught later
+  //         }
+  //       });
+  
+  //       // Wait for all shift promises to resolve
+  //       const savedShifts = await Promise.all(shiftPromises);
+  
+  //       response.json({ shifts: savedShifts });
+  //     } else {
+  //       throw new Error('Invalid shifts data received');
+  //     }
+  //   } catch (error) {
+  //     console.log(error);
+  //     response.status(500).send('Failed to fetch and save data.');
+  //   }
+  // }
   
   
 
@@ -429,8 +1747,7 @@ export const assigneeSchema = new mongoose.Schema({
 
 export async function worklogs(){
     try{
-       let issues = await getIssues();
-       console.log(issues);
+       console.log("hi");
        
      // const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/issue/DIN-25/worklog`
      // const authHeader = `Basic ${Buffer.from(JIRA_TOKEN).toString('base64')}`          

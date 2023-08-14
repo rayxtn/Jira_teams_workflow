@@ -14,6 +14,8 @@ import Reset from './components/Reset';
 import Worklogsdata from './components/worklogsdata';
 import Worklogs from './components/Worklogs';
 import PageNotFound from './components/PageNotFound';
+import ShiftsByWeekComponent from './components/weekshifts';
+import IssuesList from './components/issuesbyweek';
 
 //import  Worklogs  from '../../server/controllers/jirapiController';
 //import Plans from '../../server/controllers/teamsapiController';
@@ -69,6 +71,15 @@ const router = createBrowserRouter([
         path : '*',
         element : <PageNotFound></PageNotFound>
     },
+    {
+        path:'/shiftbyweek',
+        element: <ShiftsByWeekComponent></ShiftsByWeekComponent>
+    },
+    {
+        path:'/issuesbyweek',
+        element:<IssuesList></IssuesList>
+
+    }
 
    
 ])

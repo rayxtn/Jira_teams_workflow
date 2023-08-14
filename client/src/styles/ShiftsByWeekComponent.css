@@ -1,0 +1,138 @@
+/* ShiftsByWeekComponent.css */
+
+/* Overall styling for the component */
+.page-container {
+    
+    justify-content: center;
+    align-items: center;
+ 
+  }
+
+.App {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background-color: #f7f7f7;
+  }
+  
+  /* Header styling */
+  .header {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+    font-size: x-large;
+  }
+  
+  /* Week container styling */
+  .week-container {
+    margin: 10px 0;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background-color: #fff;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+ 
+  
+  /* Week title styling */
+  .week-title {
+    margin-bottom: 10px;
+    cursor: pointer;
+    color: #007bff;
+    font-size: 1rem;
+    text-align: center;
+  }
+  
+  /* Group container styling */
+  .group-container {
+    margin: 10px 0;
+    padding: 20px;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    background-color: #fff;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  
+  .group-container:hover {
+    transform: scale(1.02);
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Group title styling */
+  .group-title {
+    margin-bottom: 10px;
+    cursor: pointer;
+    color: #28a745;
+    font-size: 1.1rem;
+  }
+  
+  /* Users container styling */
+  .users-container {
+    margin: 10px 0;
+    padding: 20px;
+    border: 1px solid #f0f0f0;
+    border-radius: 10px;
+    background-color: #fff;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  
+  .users-container:hover {
+    transform: scale(1.02);
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* User container styling */
+  .user-container {
+    margin: 10px 0;
+    padding: 20px;
+    border: 1px solid #f5f5f5;
+    border-radius: 10px;
+    cursor: pointer;
+    background-color: #fff;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  
+  .user-container:hover {
+    transform: scale(1.02);
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* User title styling */
+  .user-title {
+    margin-bottom: 10px;
+    color: #dc3545;
+    font-size: 1rem;
+  }
+  
+  /* Shifts container styling */
+  .shifts-container {
+    margin: 10px 0;
+    padding: 20px;
+    border: 1px solid #f9f9f9;
+    border-radius: 10px;
+    background-color: #fff;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  
+  .shifts-container:hover {
+    transform: scale(1.02);
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Shift container styling */
+  .shift-container {
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid #f9f9f9;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+    color: #333;
+  }
+  

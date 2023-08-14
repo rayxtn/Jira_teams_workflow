@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import '../styles/dashboard.css'; // Import the CSS file for styling
 import Component1 from './Worklogs'; // Import the first component
 import Component2 from './teamshifts'; // Import the second component
-import WeeklyData from './worklogsdata'; // Import the WeeklyData component
-import ShiftsData from './ShiftsData';
+import WeeklyData from './issuesbyweek'; // Import the WeeklyData component
+import ShiftsData from './weekshifts';
 
 const Dashboard = ({ userName }) => {
   const [activeMenuItem, setActiveMenuItem] = useState('Home');
@@ -16,9 +16,9 @@ const Dashboard = ({ userName }) => {
   const menuItems = [
     { title: 'Home', icon: '🏠' },
     { title: 'Profile', icon: '👤' },
-    { title: 'Real-time Update', icon: '⚙️' },
-    { title: 'Weekly Worklogs', icon: '⚙️' },
-    { title: 'Weekly Shifts', icon: '⚙️' },
+    { title: 'Update', icon: '⚙️' },
+    { title: 'Worklogs', icon: '⚙️' },
+    { title: 'Shifts', icon: '⚙️' },
     { title: 'Workflow', icon: '⚙️' },
     // Add more menu items as needed
   ];
@@ -32,13 +32,13 @@ const Dashboard = ({ userName }) => {
     setShowShiftsData(false);
 
 
-    if (title === 'Real-time Update') {
+    if (title === 'Update') {
       setShowButtons(true);
     }
-    if (title === 'Weekly Worklogs') {
+    if (title === 'Worklogs') {
       setShowWeeklyData(true);
     }
-    if (title === 'Weekly Shifts') {
+    if (title === 'Shifts') {
       setShowShiftsData(true);
     }
     // Perform any additional logic or navigation here
@@ -59,7 +59,7 @@ const Dashboard = ({ userName }) => {
       <div className="sidebar">
         <div className="user-profile">
           <span className="user-icon">👤</span>
-          <span className="user-name">{userName}</span>
+          <span className="user-name"><p>ADMIN</p></span>
         </div>
         <br /><br /><br /><br />
         <ul className="menu">
@@ -82,19 +82,19 @@ const Dashboard = ({ userName }) => {
         <br />
         <div className="dashboard-content">
           <h2>{activeMenuItem}</h2>
-          {activeMenuItem === 'Real-time Update' && showButtons && (
+          {activeMenuItem === 'Update' && showButtons && (
             <div className="buttons-container">
               <button className="cool-button" onClick={handleButton1Click}>
-                Update Jira data into the database
+                Update Worklogs data
               </button>
               <button className="cool-button" onClick={handleButton2Click}>
-                Update shifts data into the database
+                Update shifts data 
               </button>
             </div>
           )}
 
-          {activeMenuItem === 'Weekly Worklogs' && showWeeklyData && <WeeklyData />}
-          {activeMenuItem === 'Weekly Shifts' && showShiftsData && <ShiftsData />}
+          {activeMenuItem === 'Worklogs' && showWeeklyData && <WeeklyData />}
+          {activeMenuItem === 'Shifts' && showShiftsData && <ShiftsData />}
           {showComponent1 && <Component1 />}
           {showComponent2 && <Component2 />}
         </div>

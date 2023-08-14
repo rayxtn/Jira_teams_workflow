@@ -28,9 +28,7 @@ const ShiftsData = () => {
   return (
     <div>
       <h1>Shifts List</h1>
-      {shifts.length === 0 ? (
-        <p>No shifts available.</p>
-      ) : (
+      
         <table>
           <thead>
             <tr>
@@ -53,7 +51,7 @@ const ShiftsData = () => {
             ))}
           </tbody>
         </table>
-      )}
+      
     </div>
   );
 };
