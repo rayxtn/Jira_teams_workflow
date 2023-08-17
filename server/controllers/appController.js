@@ -15,12 +15,10 @@ import mongoose from 'mongoose';
 import moment from "moment";
 import Project from '../model/issues.model.js';
 import ShiftsByWeek from '../model/ShiftsByWeek.model.js';
-import Issue from '../model/issues.model.js';
+import IssuesByProject from '../model/IssuesByProject.model.js';
 
 
 
-// connecting to teams api using ms graph , gathering the data of the week 
-// reforming the response and saving the data in mongo db the collection name is shiftsbyweek
 
 export async function connectMS(request, response) {
   try {
@@ -199,119 +197,150 @@ export async function connectMS(request, response) {
   }
 }
 
-// connecting to jira api and forming a json response containing all the data of projects , users , 
-// issues and worklogs , and saving in database
+
+
 export async function getIssues(req, res) {
   try {
     const today = new Date();
     const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
 
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - currentDay + 1); // Set to Sunday midnight
-    startOfWeek.setHours(0, 0, 0, 0);
-    startOfWeek.setUTCHours(0); // Set UTC hours to ensure consistent time
-    
-    const endOfWeek = new Date(today);
-    endOfWeek.setDate(startOfWeek.getDate() + 7); // Set to next Sunday midnight
-    endOfWeek.setHours(23, 59, 59, 999);
-    endOfWeek.setUTCHours(23); // Set UTC hours to ensure consistent time
-    
-    const startDate = startOfWeek.toISOString();
-    const endDate = endOfWeek.toISOString();
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+    startDate.setHours(0, 0, 0, 0);
 
-    const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`;
+    const endDate = new Date(today);
+    endDate.setDate(startDate.getDate() + 7); // Set to next Sunday midnight
+    endDate.setHours(23, 59, 59, 999);
+
+    const startDateString = `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}-${startDate.getDate().toString().padStart(2, '0')}`;
+    const endDateString = `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}`;
+
+
+    const addeddate='T00:00:00.000Z';
+
+    const weekstart = startDateString.concat(addeddate);
+    const weekend = endDateString.concat(addeddate);
 
     const projectsApiUrl = 'https://avaxia.atlassian.net/rest/api/3/project';
+    const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`;
+
     const projectsResponse = await fetch(projectsApiUrl, {
       method: 'GET',
       headers: { 'Authorization': authHeader, 'Accept': 'application/json' }
     });
     const projectsData = await projectsResponse.json();
 
-    const projectResponse = [];
+    const response = [];
 
-    for (const project of projectsData) {
-      const { name: projectName, id: projectId } = project;
+    await Promise.all(projectsData.map(async (project) => {
+      const projectName = project.name;
+      const projectId = project.id;
+
+      let startAt = 0;
+      const maxResults = 100;
+
       const projectObject = {
         projectName: projectName,
-        users: []
+        users: [] // Create an array to hold user data
       };
 
-      const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=${projectId}&maxResults=100`;
-      const jiraResponse = await fetch(jiraApiUrl, {
-        method: 'GET',
-        headers: { 'Authorization': authHeader, 'Accept': 'application/json' }
-      });
-      const issuesData = await jiraResponse.json();
-      const issues = issuesData.issues;
-
-      for (const issue of issues) {
-        const { fields } = issue;
-        const { assignee } = fields;
-
-        if (!assignee) {
-          continue;
-        }
-
-        const assigneeAccountId = assignee.accountId;
-        const assigneeEmail = assignee.emailAddress;
-        const assigneeDisplayName = assignee.displayName;
-
-        if (!assigneeAccountId || !assigneeEmail || !assigneeDisplayName) {
-          continue;
-        }
-
-        const worklogsUrl = `https://avaxia.atlassian.net/rest/api/3/issue/${issue.id}/worklog`;
-        const worklogsResponse = await fetch(worklogsUrl, {
+      while (true) {
+        const jiraApiUrl = `https://avaxia.atlassian.net/rest/api/3/search?jql=project=${projectId}&maxResults=${maxResults}&startAt=${startAt}`;
+        const response = await fetch(jiraApiUrl, {
           method: 'GET',
           headers: { 'Authorization': authHeader, 'Accept': 'application/json' }
         });
-        const worklogsData = await worklogsResponse.json();
-        const filteredWorklogs = worklogsData.worklogs.filter(worklog => {
-          const startedDate = new Date(worklog.started);
-          return startedDate >= startOfWeek && startedDate <= endOfWeek;
-        });
+        const issuesData = await response.json();
+        const issues = issuesData.issues;
 
-        if (!filteredWorklogs.length) {
-          continue;
+        for (const issue of issues) {
+          const assignee = issue.fields.assignee;
+          const assigneeAccountId = assignee ? assignee.accountId : undefined;
+          const assigneeEmail = assignee ? assignee.emailAddress : undefined;
+          const assigneeDisplayName = assignee ? assignee.displayName : undefined;
+          const issueId = issue.id;
+          const issueKey = issue.key;
+          const summary = issue.fields.summary;
+
+          const worklogsUrl = `https://avaxia.atlassian.net/rest/api/3/issue/${issueId}/worklog`;
+          try {
+            const worklogsResponse = await fetch(worklogsUrl, {
+              method: 'GET',
+              headers: { 'Authorization': authHeader, 'Accept': 'application/json' }
+            });
+            const worklogsData = await worklogsResponse.json();
+            const filteredWorklogs = worklogsData.worklogs.filter(worklog => {
+              const startedDate = new Date(worklog.started);
+              return startedDate >= startDate && startedDate <= endDate;
+            });
+
+            if (!filteredWorklogs.length) {
+              continue;
+            }
+
+            const issueObject = {
+              issueId: issueId,
+              issueKey: issueKey,
+              summary: summary,
+              worklogs: filteredWorklogs.map(worklog => ({
+                created: worklog.created,
+                updated: worklog.updated,
+                timeSpent: worklog.timeSpent,
+                started: worklog.started,
+              }))
+            };
+
+            const userObject = {
+              displayName: assigneeDisplayName,
+              email: assigneeEmail,
+              issues: [issueObject] // Initialize the issues array for the user
+            };
+
+            // Check if the user already exists in the projectObject
+            const existingUser = projectObject.users.find(user => user.email === assigneeEmail);
+            if (existingUser) {
+              existingUser.issues.push(issueObject);
+            } else {
+              projectObject.users.push(userObject);
+            }
+          } catch (error) {
+            console.error(`Failed to fetch worklogs for issue: ${issueKey}`, error.stack || error.message || error);
+          }
         }
 
-        const issueObject = {
-          issueId: issue.id,
-          issueKey: issue.key,
-          summary: fields.summary,
-          worklogs: filteredWorklogs.map(worklog => ({
-            created: worklog.created,
-            updated: worklog.updated,
-            timeSpent: worklog.timeSpent,
-            started: worklog.started,
-          }))
-        };
-
-        const userObject = {
-          displayName: assigneeDisplayName,
-          email: assigneeEmail,
-          issues: [issueObject]
-        };
-
-        const existingUser = projectObject.users.find(user => user.email === assigneeEmail);
-        if (existingUser) {
-          existingUser.issues.push(issueObject);
-        } else {
-          projectObject.users.push(userObject);
+        if (issues.length < maxResults) {
+          break;
         }
+
+        startAt += maxResults;
       }
 
-      projectResponse.push(projectObject);
-    }
-
+      response.push(projectObject);
+    }));
+    // Prepare the response data
     const responseData = {
       week: {
-        startOfWeek: startDate,
-        endOfWeek: endDate,
+        startDate: weekstart,
+        endDate: weekend,
       },
-      project: projectResponse,
+      IssuesByProject: response,
     };
+    // Save or update the response data in the database
+  const existingData = await IssuesByProject.findOne({ startDate, endDate });
+  if (existingData) {
+    // Update existing entry
+    existingData.data = response;
+    await existingData.save();
+  } else {
+    // Create new entry
+    const newIssuesByProject = new IssuesByProject({
+      startDate: weekstart,
+      endDate: weekend,
+      data: response,
+    });
+    await newIssuesByProject.save();
+  }
+
 
     return res.status(200).json(responseData);
   } catch (error) {
@@ -320,15 +349,34 @@ export async function getIssues(req, res) {
   }
 }
 
+// front end data for issues from the database 
+export async function getIssueDataForCurrentWeek(request , res) {
+  try {
+
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
+
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(today);
+    endDate.setDate(startDate.getDate() + 7); // Set to next Sunday midnight
+    endDate.setHours(23, 59, 59, 999);
+
+    // Retrieve issues for the current week
+  const issues = await IssuesByProject.find({
+    startDate: { $gte: startDate, $lte: endDate },
+  });
 
 
 
-
-
-
-
-
-
+  return res.status(200).json(issues);
+  } catch (error) {
+    console.error('Failed to fetch data from the database:', error);
+    response.status(500).send('Failed to fetch data from the database.');
+  }
+}
 
 
 
@@ -362,6 +410,8 @@ export async function fetchShiftsData(req, res) {
     res.status(500).json({ message: 'Error retrieving data' });
   }
 }
+
+
 
 export async function getCurrentWeekData(req, res) {
   const today = new Date();
@@ -409,6 +459,8 @@ export async function getCurrentWeekData(req, res) {
     res.status(500).json({ error: 'Failed to fetch data' });
   }
 }
+
+
 
 
 export async function getUsersWithShiftsToday(req, res) {
@@ -462,6 +514,8 @@ export async function getUsersWithShiftsToday(req, res) {
 
 
 
+
+
 export async function fetchworklogs(req, res) {
   try {
     // Retrieve all documents from the 'assignees' collection
@@ -501,11 +555,16 @@ export async function fetchworklogs(req, res) {
 }
 
 
+
+
 function isWeekDataComplete(data) {
   // Check if the week data is complete by examining the required properties
   // You can customize the logic based on your specific data structure
   return data.every(assignee => assignee.issues.every(issue => issue.isComplete));
 }
+
+
+
 
 
 function updateIncompleteData(data, assignees, currentWeekStart, currentWeekEnd) {
@@ -523,6 +582,9 @@ function updateIncompleteData(data, assignees, currentWeekStart, currentWeekEnd)
 
   // Implement your own update logic based on the data structure and requirements
 }
+
+
+
 function filterWorklogsData(assignees, currentWeekStart, currentWeekEnd) {
   // Filter the worklogs data for the current week based on your specific requirements
   // You can modify this function to filter the data structure as needed
@@ -620,42 +682,16 @@ function filterWorklogsData(assignees, currentWeekStart, currentWeekEnd) {
 
 
 
-  export async function getIssueDataForCurrentWeek(request , res) {
-    try {
 
-      // Calculate the start and end dates of the current week (Monday to Sunday)
-      const today = new Date();
-      const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
-      const startDate = new Date(today);
-      startDate.setDate(today.getDate() - currentDay + 1); // Set to Monday of the current week
-      startDate.setHours(0, 0, 0, 0); // Set time to midnight
-      const endDate = new Date(today);
-      endDate.setDate(startDate.getDate() + 6); // Set to Sunday of the current week
-      endDate.setHours(23, 59, 59, 999); // Set time to Sunday midnight
-  
-      // Retrieve issues for the current week
-    const issues = await Issue.find({
-      startDate: { $gte: startDate, $lte: endDate },
-    });
+ 
 
-    // Construct the JSON response
-    const responseData = {
-      startDate: startDate,
-      endDate: endDate,
-      issues: issues,
-    };
-
-    return res.status(200).json(responseData);
-    } catch (error) {
-      console.error('Failed to fetch data from the database:', error);
-      response.status(500).send('Failed to fetch data from the database.');
-    }
-  }
-  
 
 
  
-    
+  
+  
+  
+ 
 
 
 export async function getShiftsForCurrentWeek(request, response) {
@@ -839,8 +875,6 @@ export async function getIssuesForTheCurrentWeek(req, res) {
 
 
 
-
-
 export async function getShiftsByDate(request, response) {
   try {
     // Set your app credentials and desired permissions
@@ -874,7 +908,6 @@ export async function getShiftsByDate(request, response) {
 
     const startDateString = `${startOfWeek.toISOString()}`;
     const endDateString = `${endOfWeek.toISOString()}`;
-
 
     let shiftsConfig = {
       method: 'get',
@@ -934,6 +967,9 @@ export async function getShiftsByDate(request, response) {
 
 
 
+
+
+
 export async function getShiftsByWeekForCurrentWeek(request, response) {
   try {
 
@@ -963,9 +999,6 @@ export async function getShiftsByWeekForCurrentWeek(request, response) {
 }
 
 
-
-  
-//GET WORKLOGS
 
 export async function worklogs(){
     try{
@@ -1008,7 +1041,7 @@ export async function worklogs(){
           console.log(Worklogs[i]['timeSpent']);
           console.log(Worklogs[i]['author']['accountId']);*/
       
-           
+       
               }
     catch{
       console.log(error);
@@ -1016,11 +1049,6 @@ export async function worklogs(){
     
     }
     
-
-
-
-
-
 
 
 
@@ -1054,6 +1082,9 @@ export async function verifyUser(req, res, next){
   "profile": ""
 }
 */
+
+
+
 export async function register(req,res){
 
     try {
@@ -1117,6 +1148,8 @@ export async function register(req,res){
 }
 
 
+
+
 /** POST: http://localhost:8080/api/login 
  * @param: {
   "username" : "example123",
@@ -1163,6 +1196,9 @@ export async function login(req,res){
 }
 
 
+
+
+
 /** GET: http://localhost:8080/api/user/example123 */
 export async function getUser(req,res){
     
@@ -1188,6 +1224,9 @@ export async function getUser(req,res){
     }
 
 }
+
+
+
 
 
 /** PUT: http://localhost:8080/api/updateuser 
@@ -1226,11 +1265,18 @@ export async function updateUser(req,res){
 }
 
 
+
+
+
 /** GET: http://localhost:8080/api/generateOTP */
 export async function generateOTP(req,res){
     req.app.locals.OTP = await otpGenerator.generate(6, { lowerCaseAlphabets: false, upperCaseAlphabets: false, specialChars: false})
     res.status(201).send({ code: req.app.locals.OTP })
 }
+
+
+
+
 
 
 /** GET: http://localhost:8080/api/verifyOTP */
@@ -1245,6 +1291,9 @@ export async function verifyOTP(req,res){
 }
 
 
+
+
+
 // successfully redirect user when OTP is valid
 /** GET: http://localhost:8080/api/createResetSession */
 export async function createResetSession(req,res){
@@ -1253,6 +1302,9 @@ export async function createResetSession(req,res){
    }
    return res.status(440).send({error : "Session expired!"})
 }
+
+
+
 
 
 // update the password when we have valid session

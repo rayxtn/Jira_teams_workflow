@@ -5,7 +5,7 @@
 }
 
 .sidebar {
-  width: 200px;
+  width: 220px;
   position: fixed;
   top: 0;
   left: 0;
@@ -13,11 +13,9 @@
   background-color: #20232a;
   color: white;
   padding: 20px;
-  transition: width 0.3s ease;
-}
-
-.sidebar:hover {
-  width: 220px;
+  box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.1);
+  transition: width 0.3s ease, box-shadow 0.3s ease;
+  z-index: 1; /* Ensure sidebar appears above content */
 }
 
 .user-profile {
@@ -56,22 +54,18 @@
 }
 
 .content {
-  flex: 3;
+  flex: 1;
   padding: 20px;
-  margin-left: 200px; /* Adjusted for the sidebar width */
+  margin-left: 240px; /* Adjusted for the sidebar width */
+  background-color: #f7f9fc;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .welcome-message p {
   font-size: 18px;
   color: #555;
-}
-
-.dashboard-content {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .cool-button {
@@ -98,14 +92,22 @@ h2 {
 @media (max-width: 768px) {
   .dashboard {
     flex-direction: column;
+    align-items: center;
   }
 
   .sidebar {
     width: 100%;
     position: relative;
+    box-shadow: none;
+    padding-bottom: 20px;
   }
 
   .content {
+    flex: 1;
     margin-left: 0;
+    margin-top: 20px;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 20px 15px;
   }
 }
