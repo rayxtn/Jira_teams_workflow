@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 
 /** import all components */
+import UserWithLoggedShifts from './components/UserWithLoggedShifts';
 import Username from './components/Username';
 import Password from './components/Password';
 import Dashboard from './components/dashboard';
@@ -26,6 +27,10 @@ import { AuthorizeUser, ProtectRoute } from './middleware/auth'
 
 /** root routes */
 const router = createBrowserRouter([
+    {
+        path : '/usersloggedshifts',
+        element : <UserWithLoggedShifts></UserWithLoggedShifts>
+    },
     {
         path : '/worklogsdata',
         element : <Worklogsdata></Worklogsdata>

@@ -20,105 +20,83 @@ import { response } from 'express';
 
 
 
-export async function getUsersWithSameEmail(req,response) {
+export async function getUsersWithLoggedShifts(req, response) {
   try {
-  
-
-    // Calculate the start and end dates of the current week (Monday to Sunday)
     const today = new Date();
-    const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
+    const currentDay = today.getDay();
 
     const startDate = new Date(today);
-    startDate.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+    startDate.setDate(today.getDate() - currentDay);
     startDate.setHours(0, 0, 0, 0);
 
     const endDate = new Date(today);
-    endDate.setDate(startDate.getDate() + 7); // Set to next Sunday midnight
+    endDate.setDate(startDate.getDate() + 7);
     endDate.setHours(23, 59, 59, 999);
 
-    const startDateString = `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}-${startDate.getDate().toString().padStart(2, '0')}`;
-    const endDateString = `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}`;
-    
-    const addeddate='T00:00:00.000Z';
+    const addeddate = 'T00:00:00.000Z';
 
-    const start = startDateString.concat(addeddate);
-    const end = endDateString.concat(addeddate);
+    const start = startDate.toISOString().split('T')[0] + addeddate;
+    const end = endDate.toISOString().split('T')[0] + addeddate;
 
-
-
-    // Fetch documents from the ShiftsByWeek collection for the current week
     const shiftsByWeekData = await ShiftsByWeek.find({
-      'startDate': { $gte: start },
-      'endDate' :{ $lte: end}
+      startDate: { $gte: start },
+      endDate: { $lte: end }
     });
-              // Fetch documents from the ShiftsByWeek collection for the current week
-  const IssueByProject = await IssuesByProject.find({
-    'startDate': { $gte: start },
-    'endDate' :{ $lte: end}
-  });
 
-  const result = [];    
+    const IssueByProject = await IssuesByProject.find({
+      startDate: { $gte: start },
+      endDate: { $lte: end }
+    });
 
 
-    // Loop through the groups inside the 'data' property
+    const result = [];
+
     for (const groupKey in shiftsByWeekData[0].data) {
       if (shiftsByWeekData[0].data.hasOwnProperty(groupKey)) {
         const group = shiftsByWeekData[0].data[groupKey];
 
-        // Loop through the users in the current group
         for (const userKey in group.users) {
           if (group.users.hasOwnProperty(userKey)) {
             const user = group.users[userKey];
             const userEmail = user.email;
 
-            const userShifts = [];
+            const userShifts = user.shifts.filter((shift) =>
+              (shift.displayName && ["Day", "Night", "Midnight"].some(keyword => shift.displayName.includes(keyword))) ||
+              (shift.notes && ["Day", "Night", "Midnight"].some(keyword => shift.notes.includes(keyword)))
+            );
 
-            // Loop through the shifts of the current user
-            user.shifts.forEach((shift) => {
-              // Check if the display name contains "Day", "Night", or "Midnight"
-              if (
-                (shift.displayName && (
-                  shift.displayName.includes("Day") ||
-                  shift.displayName.includes("Night") ||
-                  shift.displayName.includes("Midnight")
-                )) ||
-                (shift.notes && (
-                  shift.notes.includes("Day") ||
-                  shift.notes.includes("Night") ||
-                  shift.notes.includes("Midnight")
-                ))
-              ) {
-                userShifts.push(shift);
-              }
-            });
-
-            // Find the user in IssueByProject data
-            const userInIssueByProject = IssueByProject[0].data.find((projectUser) =>
+            const userInIssueByProject = IssueByProject[0]?.data?.find((projectUser) =>
               projectUser.users && projectUser.users.some((projUser) => projUser.email === userEmail)
             );
 
-            if (userInIssueByProject && userInIssueByProject.issues) {
-              const userLoggedShifts = userShifts.filter((shift) =>
-                userInIssueByProject.issues.some((issue) =>
-                  issue.worklogs && issue.worklogs.some(
-                    (worklog) =>
-                      new Date(worklog.started).getDay() === new Date(shift.startDateTime).getDay() 
-                  )
-                )
-              );
-             
+            if (userInIssueByProject && userInIssueByProject.users) {
+              userInIssueByProject.users.forEach((projectUser) => {
+                if (projectUser.email === userEmail && projectUser.issues) {
+                  const userWorklogs = projectUser.issues.flatMap(issue =>
+                    (issue.worklogs || []).map(worklog => ({
+                      userEmail: userEmail,
+                      worklogStarted: new Date(worklog.started),
+                      worktimeSpent : (worklog.timeSpent),
+                    }))
+                  );
 
-              if (userLoggedShifts.length > 0) {
-                result.push({
-                  groupName: group.groupName || 'undefined',
-                  user: {
-                    displayName: user.displayName,
-                    shifts: userLoggedShifts,
-                    logged: true
+                  const userLoggedShifts = userShifts.filter(shift =>
+                    userWorklogs.some(worklog =>
+                      new Date(worklog.worklogStarted).toISOString().split('T')[0] === new Date(shift.startDateTime).toISOString().split('T')[0]
+                      && worklog.worktimeSpent.includes("d")
+                      
+                    )
+                  );
+                  console.log(userWorklogs);
+
+                  if (userLoggedShifts.length > 0) {
+                    result.push({
+                      userEmail: userEmail,
+                      userLoggedShifts: userLoggedShifts
+                    });
                   }
-                });
-              }
-              console.log(userLoggedShifts);
+                }
+              });
             }
           }
         }
@@ -126,12 +104,9 @@ export async function getUsersWithSameEmail(req,response) {
     }
 
     response.send(result);
-
- 
-
- 
   } catch (error) {
     console.error('Failed to fetch data from the database:', error);
+    response.status(500).send('Internal server error');
   }
 }
 
