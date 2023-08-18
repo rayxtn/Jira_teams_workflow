@@ -1,22 +1,18 @@
-// ... (imports and component definition)
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import '../styles/IssuesList.css'; // Import your CSS file for styling
+import '../styles/IssuesList.css';
+
 function IssuesList() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [expandedIssueId, setExpandedIssueId] = useState(null);
+  const [selectedProject, setSelectedProject] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
       try {
         const response = await axios.get('http://localhost:8080/api/weekissues');
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        const responseData = await response.json();
-        setData(responseData.data || []); // Ensure a default empty array if data is missing
+        setData(response.data || []);
         setLoading(false);
       } catch (error) {
         setError(error);
@@ -26,14 +22,6 @@ function IssuesList() {
     fetchData();
   }, []);
 
-  const handleIssueClick = (issueId) => {
-    if (expandedIssueId === issueId) {
-      setExpandedIssueId(null);
-    } else {
-      setExpandedIssueId(issueId);
-    }
-  };
-
   if (loading) {
     return <p>Loading...</p>;
   }
@@ -42,51 +30,69 @@ function IssuesList() {
     return <p>Error: {error.message}</p>;
   }
 
+  const handleProjectClick = (projectIndex) => {
+    setSelectedProject(selectedProject === projectIndex ? null : projectIndex);
+  };
+
+  const renderWorklogs = (worklogs) => (
+    <ul className="worklogs-list">
+      {worklogs.map((worklog, worklogIndex) => (
+        <li key={worklogIndex} className="worklog-item">
+          <div className="worklog-date">
+            Date: {new Date(worklog.started).toLocaleDateString()}
+          </div>
+          <div className="worklog-time">
+            Time Spent: {worklog.timeSpent}
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+
   return (
-    <div className="issues-list-container">
-      <h2>Issues</h2>
-      <ul className="projects-list">
-        {data.map((project) => (
-          <li key={project._id} className="project-item">
-            <h3>{project.projectName}</h3>
-            {Array.isArray(project.users) && project.users.length > 0 && (
-              <ul className="users-list">
-                {project.users.map((user, userIndex) => (
-                  <li key={userIndex} className="user-item">
-                    <p className="assignee">Assignee: {user.displayName}</p>
-                    <p className="assignee">Email: {user.email}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {Array.isArray(project.issues) && project.issues.length > 0 && (
-              <ul className="sub-issues-list">
-                {project.issues.map((subIssue) => (
-                  <li
-                    key={subIssue.issueId}
-                    className="sub-issue-item"
-                    onClick={() => handleIssueClick(subIssue.issueId)}
-                  >
-                    <p className="sub-issue-summary">Issue: {subIssue.summary}</p>
-                    {expandedIssueId === subIssue.issueId && Array.isArray(subIssue.worklogs) && subIssue.worklogs.length > 0 && (
-                      <ul className="worklogs-list">
-                        {subIssue.worklogs.map((worklog, worklogIndex) => (
-                          <li key={worklogIndex} className="worklog-item">
-                            <p>Created: {worklog.created}</p>
-                            <p>Updated: {worklog.updated}</p>
-                            <p>Started: {worklog.started}</p>
-                            <p>Time Spent: {worklog.timeSpent}</p>
-                          </li>
+    <div className="worklog-container">
+      {data.map((item, index) => (
+        <div key={index} className="item-container">
+          <div className="item-dates">
+            <div className="start-date">
+              Start Date: {new Date(item.startDate).toLocaleDateString()}
+            </div>
+            <div className="end-date">
+              End Date: {new Date(item.endDate).toLocaleDateString()}
+            </div>
+          </div>
+          {item.data.map((project, projectIndex) => (
+            <div
+              key={projectIndex}
+              className={`project-container ${selectedProject === projectIndex ? 'selected' : ''}`}
+              onClick={() => handleProjectClick(projectIndex)}
+            >
+              <h3>Project: {project.projectName}</h3>
+              {selectedProject === projectIndex && (
+                <div className="users-container">
+                  {project.users.map((user, userIndex) => (
+                    <div key={userIndex} className="user-container">
+                      <strong>User: {user.displayName}</strong>
+                      <br></br>
+                      <strong>Email: {user.email}</strong>
+                      <div className="issues-container">
+                        {user.issues.map((issue, issueIndex) => (
+                          <div key={issueIndex} className="issue-container">
+                            <strong>Issue: {issue.summary}</strong>
+                            <div className="worklogs-container">
+                              {renderWorklogs(issue.worklogs)}
+                            </div>
+                          </div>
                         ))}
-                      </ul>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </li>
-        ))}
-      </ul>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }

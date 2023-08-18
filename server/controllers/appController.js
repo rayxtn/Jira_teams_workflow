@@ -16,6 +16,162 @@ import moment from "moment";
 import Project from '../model/issues.model.js';
 import ShiftsByWeek from '../model/ShiftsByWeek.model.js';
 import IssuesByProject from '../model/IssuesByProject.model.js';
+import { response } from 'express';
+
+
+
+export async function getUsersWithSameEmail(req,response) {
+  try {
+  
+
+    // Calculate the start and end dates of the current week (Monday to Sunday)
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
+
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(today);
+    endDate.setDate(startDate.getDate() + 7); // Set to next Sunday midnight
+    endDate.setHours(23, 59, 59, 999);
+
+    const startDateString = `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}-${startDate.getDate().toString().padStart(2, '0')}`;
+    const endDateString = `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}`;
+    
+    const addeddate='T00:00:00.000Z';
+
+    const start = startDateString.concat(addeddate);
+    const end = endDateString.concat(addeddate);
+
+
+
+    // Fetch documents from the ShiftsByWeek collection for the current week
+    const shiftsByWeekData = await ShiftsByWeek.find({
+      'startDate': { $gte: start },
+      'endDate' :{ $lte: end}
+    });
+              // Fetch documents from the ShiftsByWeek collection for the current week
+  const IssueByProject = await IssuesByProject.find({
+    'startDate': { $gte: start },
+    'endDate' :{ $lte: end}
+  });
+
+  const result = [];    
+
+
+    // Loop through the groups inside the 'data' property
+    for (const groupKey in shiftsByWeekData[0].data) {
+      if (shiftsByWeekData[0].data.hasOwnProperty(groupKey)) {
+        const group = shiftsByWeekData[0].data[groupKey];
+
+        // Loop through the users in the current group
+        for (const userKey in group.users) {
+          if (group.users.hasOwnProperty(userKey)) {
+            const user = group.users[userKey];
+            const userEmail = user.email;
+
+            const userShifts = [];
+
+            // Loop through the shifts of the current user
+            user.shifts.forEach((shift) => {
+              // Check if the display name contains "Day", "Night", or "Midnight"
+              if (
+                (shift.displayName && (
+                  shift.displayName.includes("Day") ||
+                  shift.displayName.includes("Night") ||
+                  shift.displayName.includes("Midnight")
+                )) ||
+                (shift.notes && (
+                  shift.notes.includes("Day") ||
+                  shift.notes.includes("Night") ||
+                  shift.notes.includes("Midnight")
+                ))
+              ) {
+                userShifts.push(shift);
+              }
+            });
+
+            // Find the user in IssueByProject data
+            const userInIssueByProject = IssueByProject[0].data.find((projectUser) =>
+              projectUser.users && projectUser.users.some((projUser) => projUser.email === userEmail)
+            );
+
+            if (userInIssueByProject && userInIssueByProject.issues) {
+              const userLoggedShifts = userShifts.filter((shift) =>
+                userInIssueByProject.issues.some((issue) =>
+                  issue.worklogs && issue.worklogs.some(
+                    (worklog) =>
+                      new Date(worklog.started).getDay() === new Date(shift.startDateTime).getDay() 
+                  )
+                )
+              );
+             
+
+              if (userLoggedShifts.length > 0) {
+                result.push({
+                  groupName: group.groupName || 'undefined',
+                  user: {
+                    displayName: user.displayName,
+                    shifts: userLoggedShifts,
+                    logged: true
+                  }
+                });
+              }
+              console.log(userLoggedShifts);
+            }
+          }
+        }
+      }
+    }
+
+    response.send(result);
+
+ 
+
+ 
+  } catch (error) {
+    console.error('Failed to fetch data from the database:', error);
+  }
+}
+
+// const userswithnoshifts = [];
+
+    // // Loop through the groups inside the 'data' property
+    // for (const groupKey in shiftsByWeekData[0].data) {
+    //   if (shiftsByWeekData[0].data.hasOwnProperty(groupKey)) {
+    //     const group = shiftsByWeekData[0].data[groupKey];
+
+    //     // Loop through the users in the current group
+    //     for (const userKey in group.users) {
+    //       if (group.users.hasOwnProperty(userKey)) {
+    //         const user = group.users[userKey];
+
+    //         const userShifts = [];
+
+    //         // Loop through the shifts of the current user
+    //         user.shifts.forEach((shift) => {
+    //           // Check if the display name contains "Esprit", "Off", or has no specific keyword
+    //           if (shift.displayName.includes("Esprit") || shift.displayName.includes("Off") || shift.displayName.includes(" ")) {
+    //             userShifts.push(shift);
+    //           }
+    //         });
+
+    //         // If the user has shifts with specific display names, add them to the shiftsWithSpecificDisplayNames array
+    //         if (userShifts.length > 0) {
+    //           userswithnoshifts.push({
+    //             groupName: group.groupName,
+    //             user: {
+    //               displayName: user.displayName,
+    //               shifts: userShifts
+    //             }
+    //           });
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
+
 
 
 
@@ -165,17 +321,15 @@ export async function connectMS(request, response) {
    
       // Prepare the response data
       const responseData = {
-        week: {
           startOfWeek: startDate,
           endOfWeek: endDate,
-        },
         shiftsByGroup: shiftsByGroup,
       };
       // Save or update the response data in the database
     const existingData = await ShiftsByWeek.findOne({ startDate, endDate });
     if (existingData) {
       // Update existing entry
-      existingData.data = responseData;
+      existingData.data = shiftsByGroup;
       await existingData.save();
     } else {
       // Create new entry
@@ -319,14 +473,13 @@ export async function getIssues(req, res) {
     }));
     // Prepare the response data
     const responseData = {
-      week: {
+      
         startDate: weekstart,
         endDate: weekend,
-      },
       IssuesByProject: response,
     };
     // Save or update the response data in the database
-  const existingData = await IssuesByProject.findOne({ startDate, endDate });
+  const existingData = await IssuesByProject.findOne({ weekstart, weekend });
   if (existingData) {
     // Update existing entry
     existingData.data = response;
@@ -350,28 +503,46 @@ export async function getIssues(req, res) {
 }
 
 // front end data for issues from the database 
-export async function getIssueDataForCurrentWeek(request , res) {
+export async function getIssueDataForCurrentWeek(request , response) {
   try {
 
-    const today = new Date();
-    const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
+   // Calculate the start and end dates of the current week (Monday to Sunday)
+   const today = new Date();
+   const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
 
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - currentDay); // Set to Sunday midnight
-    startDate.setHours(0, 0, 0, 0);
+   const startDate = new Date(today);
+   startDate.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+   startDate.setHours(0, 0, 0, 0);
 
-    const endDate = new Date(today);
-    endDate.setDate(startDate.getDate() + 7); // Set to next Sunday midnight
-    endDate.setHours(23, 59, 59, 999);
+   const endDate = new Date(today);
+   endDate.setDate(startDate.getDate() + 7); // Set to next Sunday midnight
+   endDate.setHours(23, 59, 59, 999);
 
-    // Retrieve issues for the current week
-  const issues = await IssuesByProject.find({
-    startDate: { $gte: startDate, $lte: endDate },
-  });
+   const startDateString = `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}-${startDate.getDate().toString().padStart(2, '0')}`;
+   const endDateString = `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}`;
+   
+   const addeddate='T00:00:00.000Z';
+
+   const start = startDateString.concat(addeddate);
+   const end = endDateString.concat(addeddate);
 
 
 
-  return res.status(200).json(issues);
+
+
+   console.log(start);
+   console.log(end);
+
+   // Fetch documents from the ShiftsByWeek collection for the current week
+   const IssueByProject = await IssuesByProject.find({
+     'startDate': { $gte: start },
+     'endDate' :{ $lte: end}
+   });
+
+
+
+   // Respond with the fetched data
+   response.json(IssueByProject);
   } catch (error) {
     console.error('Failed to fetch data from the database:', error);
     response.status(500).send('Failed to fetch data from the database.');
@@ -968,7 +1139,7 @@ export async function getShiftsByDate(request, response) {
 
 
 
-
+// teams the component
 
 export async function getShiftsByWeekForCurrentWeek(request, response) {
   try {
@@ -976,19 +1147,31 @@ export async function getShiftsByWeekForCurrentWeek(request, response) {
     // Calculate the start and end dates of the current week (Monday to Sunday)
     const today = new Date();
     const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
+
     const startDate = new Date(today);
-    startDate.setDate(today.getDate() - currentDay + 1); // Set to Monday of the current week
-    startDate.setHours(0, 0, 0, 0); // Set time to midnight
+    startDate.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+    startDate.setHours(0, 0, 0, 0);
+
     const endDate = new Date(today);
-    endDate.setDate(startDate.getDate() + 6); // Set to Sunday of the current week
-    endDate.setHours(23, 59, 59, 999); // Set time to Sunday midnight
+    endDate.setDate(startDate.getDate() + 7); // Set to next Sunday midnight
+    endDate.setHours(23, 59, 59, 999);
+
+    const startDateString = `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}-${startDate.getDate().toString().padStart(2, '0')}`;
+    const endDateString = `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}`;
+    
+    const addeddate='T00:00:00.000Z';
+
+    const start = startDateString.concat(addeddate);
+    const end = endDateString.concat(addeddate);
+
+    console.log(start);
+    console.log(end);
 
     // Fetch documents from the ShiftsByWeek collection for the current week
     const shiftsByWeekData = await ShiftsByWeek.find({
-      'week.startDate': { $gte: startDate, $lte: endDate },
+      'startDate': { $gte: start },
+      'endDate' :{ $lte: end}
     });
-
-
 
     // Respond with the fetched data
     response.json(shiftsByWeekData);

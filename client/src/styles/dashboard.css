@@ -2,6 +2,7 @@
 .dashboard {
   display: flex;
   background-color: #f7f9fc;
+  min-height: 100vh;
 }
 
 .sidebar {
@@ -15,7 +16,7 @@
   padding: 20px;
   box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.1);
   transition: width 0.3s ease, box-shadow 0.3s ease;
-  z-index: 1; /* Ensure sidebar appears above content */
+  z-index: 1;
 }
 
 .user-profile {
@@ -37,15 +38,23 @@
 .menu li {
   cursor: pointer;
   padding: 10px 0;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease, border-radius 0.3s ease, width 0.3s ease;
+  border-radius: 10px;
+  width: 100%;
+  display: flex;
+  align-items: center;
 }
 
 .menu li:hover {
   background-color: #333;
+  width: calc(100% + 40px);
+  margin-left: -20px;
 }
 
 .menu li.active {
   background-color: #333;
+  width: calc(100% + 40px);
+  margin-left: -20px;
 }
 
 .menu-icon {
@@ -56,7 +65,7 @@
 .content {
   flex: 1;
   padding: 20px;
-  margin-left: 240px; /* Adjusted for the sidebar width */
+  margin-left: 240px;
   background-color: #f7f9fc;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
@@ -86,13 +95,13 @@
 h2 {
   color: #333;
   margin-bottom: 20px;
+  font-size: 24px;
 }
 
 /* Responsive design for smaller screens */
 @media (max-width: 768px) {
   .dashboard {
     flex-direction: column;
-    align-items: center;
   }
 
   .sidebar {
@@ -103,8 +112,6 @@ h2 {
   }
 
   .content {
-    flex: 1;
-    margin-left: 0;
     margin-top: 20px;
     border-radius: 0;
     box-shadow: none;
