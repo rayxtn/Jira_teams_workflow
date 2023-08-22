@@ -333,22 +333,23 @@ export async function getIssues(req, res) {
     const today = new Date();
     const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
 
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - currentDay); // Set to Sunday midnight
-    startDate.setHours(0, 0, 0, 0);
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+    startOfWeek.setHours(0, 0, 0, 0);
 
-    const endDate = new Date(today);
-    endDate.setDate(startDate.getDate() + 7); // Set to next Sunday midnight
-    endDate.setHours(23, 59, 59, 999);
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(startOfWeek.getDate() + 7); // Set to next Sunday midnight
+    endOfWeek.setHours(23, 59, 59, 999);
 
-    const startDateString = `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}-${startDate.getDate().toString().padStart(2, '0')}`;
-    const endDateString = `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}`;
-
-
+    const startDateString = `${startOfWeek.getFullYear()}-${(startOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${startOfWeek.getDate().toString().padStart(2, '0')}`;
+    const endDateString = `${endOfWeek.getFullYear()}-${(endOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${endOfWeek.getDate().toString().padStart(2, '0')}`;
+    
     const addeddate='T00:00:00.000Z';
 
-    const weekstart = startDateString.concat(addeddate);
-    const weekend = endDateString.concat(addeddate);
+
+
+    const startDate = startDateString.concat(addeddate);
+    const endDate = endDateString.concat(addeddate);
 
     const projectsApiUrl = 'https://avaxia.atlassian.net/rest/api/3/project';
     const authHeader = `Basic ${Buffer.from('raed.houimli@avaxia-group.com:ATATT3xFfGF00YV_MQIjYKEHqKYBJzDBPKb1US9miwCek5YrufLycXMjhrQgsHKC4contO9r4WBf-fKGurcZ3rjgszYxbyG2l8QSKgEj1ixrDyR2B4yyv2r2RnQpoMpGt44LacMkr3MGzxAnIXxuiKt1PB2gAKDgOqH7365nzAga2dID-_LC4Q4=01FC55E8').toString('base64')}`;
@@ -398,14 +399,18 @@ export async function getIssues(req, res) {
               headers: { 'Authorization': authHeader, 'Accept': 'application/json' }
             });
             const worklogsData = await worklogsResponse.json();
+          
+
             const filteredWorklogs = worklogsData.worklogs.filter(worklog => {
               const startedDate = new Date(worklog.started);
-              return startedDate >= startDate && startedDate <= endDate;
+              return startedDate >= startOfWeek && startedDate <= endOfWeek;
             });
+          
 
             if (!filteredWorklogs.length) {
               continue;
             }
+          
 
             const issueObject = {
               issueId: issueId,
@@ -424,6 +429,7 @@ export async function getIssues(req, res) {
               email: assigneeEmail,
               issues: [issueObject] // Initialize the issues array for the user
             };
+          
 
             // Check if the user already exists in the projectObject
             const existingUser = projectObject.users.find(user => user.email === assigneeEmail);
@@ -437,6 +443,7 @@ export async function getIssues(req, res) {
           }
         }
 
+
         if (issues.length < maxResults) {
           break;
         }
@@ -446,31 +453,32 @@ export async function getIssues(req, res) {
 
       response.push(projectObject);
     }));
-    // Prepare the response data
-    const responseData = {
-      
-        startDate: weekstart,
-        endDate: weekend,
-      IssuesByProject: response,
-    };
-    // Save or update the response data in the database
-  const existingData = await IssuesByProject.findOne({ weekstart, weekend });
+
+     // Prepare the response data
+     const responseData = {
+      startOfWeek: startDate,
+      endOfWeek: endDate,
+      data : response,
+  };
+
+  // Save or update the response data in the database
+  const existingData = await IssuesByProject.findOne({ startDate, endDate });
   if (existingData) {
-    // Update existing entry
-    existingData.data = response;
-    await existingData.save();
+  // Update existing entry
+  existingData.data = response;
+  await existingData.save();
   } else {
-    // Create new entry
-    const newIssuesByProject = new IssuesByProject({
-      startDate: weekstart,
-      endDate: weekend,
-      data: response,
-    });
-    await newIssuesByProject.save();
+  // Create new entry
+  const newIssuesByProject = new IssuesByProject({
+    startDate,
+    endDate,
+    data: response,
+  });
+  await newIssuesByProject.save();
   }
 
+  res.json({ responseData });
 
-    return res.status(200).json(responseData);
   } catch (error) {
     console.error('FAILED TO CONNECT!', error.stack || error.message || error);
     return res.status(500).send('Failed to fetch issues.');
