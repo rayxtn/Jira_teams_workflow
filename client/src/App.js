@@ -17,6 +17,7 @@ import Worklogs from './components/Worklogs';
 import PageNotFound from './components/PageNotFound';
 import ShiftsByWeekComponent from './components/weekshifts';
 import IssuesList from './components/issuesbyweek';
+import Bonusdata from './components/bonusdata';
 
 //import  Worklogs  from '../../server/controllers/jirapiController';
 //import Plans from '../../server/controllers/teamsapiController';
@@ -83,6 +84,11 @@ const router = createBrowserRouter([
     {
         path:'/issuesbyweek',
         element:<IssuesList></IssuesList>
+
+    },  
+    {
+        path:'/bonusdata',
+        element:<Bonusdata></Bonusdata>
 
     }
 
