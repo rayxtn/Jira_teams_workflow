@@ -7,7 +7,7 @@ function Bonusdata() {
 
   useEffect(() => {
     // Fetch data from the server here and update the userShiftsData state
-    fetch('http://localhost:8080/api/validation')
+    fetch('http://localhost:8080/api/bonusdata')
       .then(response => response.json())
       .then(data => setUserShiftsData(data))
       .catch(error => console.error('Error fetching data:', error));
