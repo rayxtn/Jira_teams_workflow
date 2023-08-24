@@ -13,35 +13,42 @@ function UserShiftsDisplay() {
       .catch(error => console.error('Error fetching data:', error));
   }, []);
 
+
+
+
+
+
   return (
-    <div className="user-shifts-container">
-      <h2>Users Who logged their Shifts this week :</h2>
-      <table className="user-shifts-table">
-        <thead>
-          <tr>
-            <th>User Email</th>
-            <th>User Logged Shifts</th>
-          </tr>
-        </thead>
-        <tbody>
-          {userShiftsData.map((userData, index) => (
-            <tr key={index}>
-              <td>{userData.userEmail}</td>
-              <td>
-                <ul className="user-shifts-list">
-                  {userData.userLoggedShifts.map((shift, shiftIndex) => (
-                    <li className="shift-item" key={shiftIndex}>
-                      <span className="shift-date">{shift.startDateTime}</span>
-                      <span className="shift-name">{shift.displayName}</span>
-                    </li>
-                  ))}
-                </ul>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div>
+      {Object.keys(userShiftsData).map((groupName, groupIndex) => {
+        const group = userShiftsData[groupName];
+        if (group.length > 0) {
+          return (
+            <div key={groupIndex}>
+              <h2>Group Name: {groupName}</h2>
+              <ul>
+                {group.map((user, userIndex) => (
+                  <li key={userIndex}>
+                    <h3>User: {user.userEmail}</h3>
+                    <ul>
+                      {user.userLoggedShifts.map((shift, shiftIndex) => (
+                        <li key={shiftIndex}>
+                          <p>Shift Date: {shift.startDateTime}</p>
+                          <p>Time Spent: {shift.endDateTime}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        } else {
+          return null; // Do not render empty groups
+        }
+      })}
     </div>
   );
+
                   }
 export default UserShiftsDisplay;
