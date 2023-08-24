@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/UserShiftsDisplay.css'; // Import the CSS file
 
-
-function Bonusdata() {
+function UserShiftsDisplay() {
   const [userShiftsData, setUserShiftsData] = useState([]);
+  const [expandedGroups, setExpandedGroups] = useState({});
 
   useEffect(() => {
     // Fetch data from the server here and update the userShiftsData state
@@ -13,35 +13,56 @@ function Bonusdata() {
       .catch(error => console.error('Error fetching data:', error));
   }, []);
 
+  const toggleGroup = groupName => {
+    setExpandedGroups(prevExpandedGroups => ({
+      ...prevExpandedGroups,
+      [groupName]: !prevExpandedGroups[groupName]
+    }));
+  };
+
   return (
     <div className="user-shifts-container">
-      <h2>Users Who logged their Shifts this week :</h2>
-      <table className="user-shifts-table">
-        <thead>
-          <tr>
-            <th>User Email</th>
-            <th>User Logged Shifts</th>
-          </tr>
-        </thead>
-        <tbody>
-          {userShiftsData.map((userData, index) => (
-            <tr key={index}>
-              <td>{userData.userEmail}</td>
-              <td>
-                <ul className="user-shifts-list">
-                  {userData.userLoggedShifts.map((shift, shiftIndex) => (
-                    <li className="shift-item" key={shiftIndex}>
-                      <span className="shift-date">{shift.startDateTime}</span>
-                      <span className="shift-name">{shift.displayName}</span>
-                    </li>
-                  ))}
-                </ul>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {Object.keys(userShiftsData).map((groupName, groupIndex) => {
+        const group = userShiftsData[groupName];
+        const isGroupExpanded = expandedGroups[groupName];
+        if (group.length > 0) {
+          return (
+            <div key={groupIndex} className="group-container">
+              <h2 className="group-name" onClick={() => toggleGroup(groupName)}>
+                Group Name: {groupName}
+              </h2>
+              {isGroupExpanded && (
+                <table className="shift-table">
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>Shift Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.map((user, userIndex) => (
+                      <tr key={userIndex}>
+                        <td>{user.userEmail}</td>
+                        <td>
+                          <ul className="shift-list">
+                            {user.userLoggedShifts.map((shift, shiftIndex) => (
+                              <li key={shiftIndex}>{shift.startDateTime}</li>
+                            ))}
+                          </ul>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          );
+        } else {
+          return null; // Do not render empty groups
+        }
+      })}
     </div>
   );
-                  }
-export default Bonusdata;
+}
+
+export default UserShiftsDisplay;

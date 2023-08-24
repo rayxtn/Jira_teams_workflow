@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import '../styles/UserShiftsDisplay.css'; // Import the CSS file
-
+import '../styles/loggedshifts.css'; // Import the CSS file
 
 function UserShiftsDisplay() {
   const [userShiftsData, setUserShiftsData] = useState([]);
+  const [expandedGroups, setExpandedGroups] = useState({});
 
   useEffect(() => {
     // Fetch data from the server here and update the userShiftsData state
@@ -13,34 +13,52 @@ function UserShiftsDisplay() {
       .catch(error => console.error('Error fetching data:', error));
   }, []);
 
-
-
-
-
+  const toggleGroup = groupName => {
+    setExpandedGroups(prevExpandedGroups => ({
+      ...prevExpandedGroups,
+      [groupName]: !prevExpandedGroups[groupName]
+    }));
+  };
 
   return (
-    <div>
+    <div className="user-shifts-container">
       {Object.keys(userShiftsData).map((groupName, groupIndex) => {
         const group = userShiftsData[groupName];
+        const isGroupExpanded = expandedGroups[groupName] || false;
+
         if (group.length > 0) {
           return (
-            <div key={groupIndex}>
-              <h2>Group Name: {groupName}</h2>
-              <ul>
-                {group.map((user, userIndex) => (
-                  <li key={userIndex}>
-                    <h3>User: {user.userEmail}</h3>
-                    <ul>
-                      {user.userLoggedShifts.map((shift, shiftIndex) => (
-                        <li key={shiftIndex}>
-                          <p>Shift Date: {shift.startDateTime}</p>
-                          <p>Time Spent: {shift.endDateTime}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  </li>
-                ))}
-              </ul>
+            <div key={groupIndex} className="group-container">
+              <h2
+                className={`group-name ${isGroupExpanded ? 'expanded' : ''}`}
+                onClick={() => toggleGroup(groupName)}
+              >
+                Group Name: {groupName}
+              </h2>
+              {isGroupExpanded && (
+                <table className="shift-table">
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>Shift Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.map((user, userIndex) => (
+                      <tr key={userIndex}>
+                        <td>{user.userEmail}</td>
+                        <td>
+                          <ul className="shift-list">
+                            {user.userLoggedShifts.map((shift, shiftIndex) => (
+                              <li key={shiftIndex}>{shift.startDateTime}</li>
+                            ))}
+                          </ul>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           );
         } else {
@@ -49,6 +67,6 @@ function UserShiftsDisplay() {
       })}
     </div>
   );
+}
 
-                  }
 export default UserShiftsDisplay;

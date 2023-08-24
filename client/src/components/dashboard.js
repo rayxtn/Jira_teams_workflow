@@ -5,6 +5,8 @@ import Component2 from './teamshifts'; // Import the second component
 import WeeklyData from './issuesbyweek'; // Import the WeeklyData component
 import ShiftsData from './weekshifts';
 import UserData from './UserWithLoggedShifts';
+import BonusData from './bonusdata';
+
 
 const Dashboard = ({ userName }) => {
   const [activeMenuItem, setActiveMenuItem] = useState('Home');
@@ -14,6 +16,7 @@ const Dashboard = ({ userName }) => {
   const [showWeeklyData, setShowWeeklyData] = useState(false);
   const [showShiftsData , setShowShiftsData] = useState(false);
   const [showUsersData,setShowUsersData] = useState(false);
+  const [showBonusData, setShowBonusData] =useState(false);
 
   const menuItems = [
     { title: 'Home', icon: '🏠' },
@@ -21,8 +24,9 @@ const Dashboard = ({ userName }) => {
     { title: 'Update', icon: '⚙️' },
     { title: 'Worklogs', icon: '⚙️' },
     { title: 'Shifts', icon: '⚙️' },
-    { title: 'Workflow', icon: '⚙️' },
     {title: 'Logged Users', icon: '⚙️'},
+    { title: 'Workflow Bonus', icon: '⚙️' },
+   
     // Add more menu items as needed
   ];
 
@@ -34,6 +38,7 @@ const Dashboard = ({ userName }) => {
     setShowWeeklyData(false);
     setShowShiftsData(false);
     setShowUsersData(false);
+    setShowBonusData(false);
 
 
     if (title === 'Update') {
@@ -48,6 +53,10 @@ const Dashboard = ({ userName }) => {
     if(title === 'Logged Users') {
       setShowUsersData(true);
     }
+    if(title === 'Workflow Bonus') {
+      setShowBonusData(true);
+    }
+    
     // Perform any additional logic or navigation here
   };
 
@@ -103,6 +112,7 @@ const Dashboard = ({ userName }) => {
           {activeMenuItem === 'Worklogs' && showWeeklyData && <WeeklyData />}
           {activeMenuItem === 'Shifts' && showShiftsData && <ShiftsData />}
           {activeMenuItem === 'Logged Users' && showUsersData && <UserData/>}
+          {activeMenuItem === 'Workflow Bonus' && showBonusData && <BonusData/>}
           {showComponent1 && <Component1 />}
           {showComponent2 && <Component2 />}
         </div>

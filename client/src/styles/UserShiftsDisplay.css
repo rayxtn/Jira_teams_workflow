@@ -2,63 +2,76 @@
 
 /* Style for the entire component container */
 .user-shifts-container {
-    font-family: Arial, sans-serif;
-    margin: 20px;
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    background-color: #f8f8f8;
-  }
-  
-  /* Style for the table */
-  .user-shifts-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-  }
-  
-  /* Style for table header */
-  .user-shifts-table th {
-    background-color: #f2f2f2;
-    border-bottom: 1px solid #ddd;
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  background-color: #f8f8f8;
+}
+
+/* Style for each group container */
+.group-container {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  padding: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: white;
+}
+
+/* Style for the group name */
+.group-name {
+  cursor: pointer;
+  color: #007bff;
+  margin: 0;
+  padding: 5px 0;
+  border-bottom: 1px solid #ccc;
+}
+
+.group-name.expanded {
+  color: #009688;
+}
+
+/* Style for the shift table */
+.shift-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+/* Style for table header */
+.shift-table th {
+  background-color: #f2f2f2;
+  border-bottom: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+/* Style for table rows */
+.shift-table td {
+  border-bottom: 1px solid #ddd;
+  padding: 10px;
+}
+
+/* Style for alternating row colors */
+.shift-table tbody tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+/* Style for the user's shifts list */
+.shift-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Style for individual shifts */
+.shift-list li {
+  margin-bottom: 5px;
+  color: #555;
+}
+
+/* Media query for responsiveness */
+@media (max-width: 768px) {
+  .group-container {
     padding: 10px;
-    text-align: left;
   }
-  
-  /* Style for table rows */
-  .user-shifts-table td {
-    border-bottom: 1px solid #ddd;
-    padding: 10px;
-  }
-  
-  /* Style for alternating row colors */
-  .user-shifts-table tr:nth-child(even) {
-    background-color: #f2f2f2;
-  }
-  
-  /* Style for the user's shifts list */
-  .user-shifts-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  
-  /* Style for individual shifts */
-  .shift-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 5px;
-  }
-  
-  /* Style for shift date-time */
-  .shift-date {
-    font-weight: bold;
-    margin-right: 10px;
-  }
-  
-  /* Style for shift display name */
-  .shift-name {
-    color: #007bff;
-  }
-  
+}
