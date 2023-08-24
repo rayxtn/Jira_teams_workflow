@@ -4,6 +4,7 @@ import Component1 from './Worklogs'; // Import the first component
 import Component2 from './teamshifts'; // Import the second component
 import WeeklyData from './issuesbyweek'; // Import the WeeklyData component
 import ShiftsData from './weekshifts';
+import UserData from './UserWithLoggedShifts';
 
 const Dashboard = ({ userName }) => {
   const [activeMenuItem, setActiveMenuItem] = useState('Home');
@@ -12,6 +13,7 @@ const Dashboard = ({ userName }) => {
   const [showComponent2, setShowComponent2] = useState(false);
   const [showWeeklyData, setShowWeeklyData] = useState(false);
   const [showShiftsData , setShowShiftsData] = useState(false);
+  const [showUsersData,setShowUsersData] = useState(false);
 
   const menuItems = [
     { title: 'Home', icon: '🏠' },
@@ -20,6 +22,7 @@ const Dashboard = ({ userName }) => {
     { title: 'Worklogs', icon: '⚙️' },
     { title: 'Shifts', icon: '⚙️' },
     { title: 'Workflow', icon: '⚙️' },
+    {title: 'Logged Users', icon: '⚙️'},
     // Add more menu items as needed
   ];
 
@@ -30,6 +33,7 @@ const Dashboard = ({ userName }) => {
     setShowComponent2(false);
     setShowWeeklyData(false);
     setShowShiftsData(false);
+    setShowUsersData(false);
 
 
     if (title === 'Update') {
@@ -40,6 +44,9 @@ const Dashboard = ({ userName }) => {
     }
     if (title === 'Shifts') {
       setShowShiftsData(true);
+    }
+    if(title === 'Logged Users') {
+      setShowUsersData(true);
     }
     // Perform any additional logic or navigation here
   };
@@ -95,6 +102,7 @@ const Dashboard = ({ userName }) => {
 
           {activeMenuItem === 'Worklogs' && showWeeklyData && <WeeklyData />}
           {activeMenuItem === 'Shifts' && showShiftsData && <ShiftsData />}
+          {activeMenuItem === 'Logged Users' && showUsersData && <UserData/>}
           {showComponent1 && <Component1 />}
           {showComponent2 && <Component2 />}
         </div>

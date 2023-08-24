@@ -88,22 +88,42 @@ export async function getUsersWithLoggedShifts(req, response) {
                       const wDate = new Date(worklog.worklogStarted);
                       const wday = wDate.getDate().toString().padStart(2, '0');
                       const wmonth = (wDate.getMonth() + 1).toString().padStart(2, '0');
-                      const wyear = wDate.getFullYear().toString();
-                      
                   
                       const shiftDate = new Date(shift.startDateTime);
                       const sday = shiftDate.getDate().toString().padStart(2, '0');
                       const smonth = (shiftDate.getMonth() + 1).toString().padStart(2, '0');
-                      //const syear = shiftDate.getFullYear().toString();
                   
-                      const isSameDay = (wday === sday) && (wmonth === smonth) ;
+                      const isSameDay = (wday === sday) && (wmonth === smonth);
+                      if (isSameDay) {
+                        const hasWorktimeSpent = worklog.worktimeSpent.includes("d");
                   
-                      const hasWorktimeSpent = worklog.worktimeSpent.includes("d");
-                      
+                        if (!hasWorktimeSpent) {
+                          // Calculate the total hours spent by the same user on the same day
+                          const userId = worklog.userId; // Replace with actual user ID
+                          const totalHoursSpentByUser = userWorklogs
+                            .filter(wl =>
+                              (new Date(wl.worklogStarted).getDate() === wDate.getDate()) &&
+                              (new Date(wl.worklogStarted).getMonth() === wDate.getMonth()) &&
+                              wl.userId === userId
+                            )
+                            .reduce((total, wl) => total + extractHoursFromSpentTime(wl.worktimeSpent), 0);
                   
-                      return isSameDay && hasWorktimeSpent;
+                          if (totalHoursSpentByUser >= 7) {
+                            return true;
+                          }
+                        } else {
+                          return true;
+                        }
+                      }
+                  
+                      return false;
                     })
-                  );             
+                  );
+                  
+                  // Function to extract hours from spentTime (e.g., "8h" -> 8)
+                  function extractHoursFromSpentTime(spentTime) {
+                    return parseInt(spentTime);
+                  }
 
                   if (userLoggedShifts.length > 0) {
                     result.push({
@@ -197,20 +217,42 @@ export async function BonusLoggedShifts(req, response) {
                       const wDate = new Date(worklog.worklogStarted);
                       const wday = wDate.getDate().toString().padStart(2, '0');
                       const wmonth = (wDate.getMonth() + 1).toString().padStart(2, '0');
-                      
                   
                       const shiftDate = new Date(shift.startDateTime);
                       const sday = shiftDate.getDate().toString().padStart(2, '0');
                       const smonth = (shiftDate.getMonth() + 1).toString().padStart(2, '0');
                   
-                      const isSameDay = (wday === sday) && (wmonth === smonth) ;
+                      const isSameDay = (wday === sday) && (wmonth === smonth);
+                      if (isSameDay) {
+                        const hasWorktimeSpent = worklog.worktimeSpent.includes("d");
                   
-                      const hasWorktimeSpent = worklog.worktimeSpent.includes("d");
-                      
+                        if (!hasWorktimeSpent) {
+                          // Calculate the total hours spent by the same user on the same day
+                          const userId = worklog.userId; // Replace with actual user ID
+                          const totalHoursSpentByUser = userWorklogs
+                            .filter(wl =>
+                              (new Date(wl.worklogStarted).getDate() === wDate.getDate()) &&
+                              (new Date(wl.worklogStarted).getMonth() === wDate.getMonth()) &&
+                              wl.userId === userId
+                            )
+                            .reduce((total, wl) => total + extractHoursFromSpentTime(wl.worktimeSpent), 0);
                   
-                      return isSameDay && hasWorktimeSpent;
+                          if (totalHoursSpentByUser >= 7) {
+                            return true;
+                          }
+                        } else {
+                          return true;
+                        }
+                      }
+                  
+                      return false;
                     })
-                  );             
+                  );
+                  
+                  // Function to extract hours from spentTime (e.g., "8h" -> 8)
+                  function extractHoursFromSpentTime(spentTime) {
+                    return parseInt(spentTime);
+                  }
 
                   if (userLoggedShifts.length > 0) {
                     result.push({

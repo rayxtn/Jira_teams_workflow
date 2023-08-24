@@ -18,7 +18,7 @@ router.route('/login').post(controller.verifyUser,controller.login); // login in
 //router.route('/assigneddata').get(controller.getAllAssignees)
 
 
-router.route('/bonuscalculation').get(controller.BonusLoggedShifts)
+router.route('/bonusdata').get(controller.BonusLoggedShifts)
 router.route('/validation').get(controller.getUsersWithLoggedShifts)
 router.route('/gettodayshifts').get(controller.getUsersWithShiftsToday)
 router.route('/getdata').get(controller.getCurrentWeekData)
@@ -27,7 +27,11 @@ router.route('/getshifts').get(controller.getShiftsByWeekForCurrentWeek)
 router.route('/fetchs').get(controller.getShiftsForCurrentWeek)
 router.route('/weekissues').get(controller.getIssueDataForCurrentWeek)
 router.route('/weekly').get(controller.getIssuesForCurrentWeek)
+
+
 //router.route('/fetchw').get(controller.fetchworklogs)
+
+
 router.route('/teams').get(controller.connectMS)
 router.route('/issues').get(controller.getIssues)
 router.route('/worklogs').get(controller.worklogs)
