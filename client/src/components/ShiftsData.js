@@ -3,7 +3,6 @@ import axios from 'axios';
 
 const ShiftsData = () => {
   const [shifts, setShifts] = useState([]);
-
   useEffect(() => {
     // Fetch shifts data from the server
     axios.get('http://localhost:8080/api/fetchs')
@@ -16,7 +15,6 @@ const ShiftsData = () => {
         console.log(error);
       });
   }, []);
-
   const renderTableCell = (shift, property) => {
     if (shift && shift.hasOwnProperty(property)) {
       return shift[property];
@@ -24,11 +22,9 @@ const ShiftsData = () => {
       return 'N/A'; // Placeholder value for missing data
     }
   };
-
   return (
     <div>
       <h1>Shifts List</h1>
-      
         <table>
           <thead>
             <tr>
@@ -51,9 +47,7 @@ const ShiftsData = () => {
             ))}
           </tbody>
         </table>
-      
     </div>
   );
 };
-
 export default ShiftsData;

@@ -56,7 +56,7 @@ export default function Register() {
             </span>
           </div>
           <form className='py-1' onSubmit={formik.handleSubmit}>
-              <div className='profile flex justify-center py-4'>
+              <div className='profile flex justify-center py-3'>
                   <label htmlFor="profile">
                     <img src={file || avatar} className={styles.profile_img} alt="avatar" />
                   </label>

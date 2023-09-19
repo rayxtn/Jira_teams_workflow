@@ -118,7 +118,6 @@ import { response } from 'express';
 //                       }
 //                     })
 //                   );
-
 //                   if (userLoggedShifts.length > 0) {
 //                     result[groupName].push({
 //                       userEmail: userEmail,
@@ -141,6 +140,12 @@ import { response } from 'express';
 // }
 
 /////
+
+export async function getUserdata(req ,res)
+{
+  const userdata= await UserModel.find();
+  res.send(userdata);
+}
 
 
 export async function getUsersWithLoggedShifts(req, response) {
@@ -230,15 +235,14 @@ export async function getUsersWithLoggedShifts(req, response) {
                     const shift = groupedShifts[shiftDate];
                     const totalShiftTime = userWorklogs.reduce((total, worklog) => {
                       const wDate = new Date(worklog.worklogStarted).toISOString().split('T')[0];
-                      if (wDate === shiftDate) {
+                      if (   (wDate === shiftDate) && (worklog.worktimeSpent.includes('d')) ) {
                         total += parseInt(worklog.worktimeSpent);
+                        userLoggedShifts.push(shift);
                       }
                       return total;
                     }, 0);
 
-                    if (totalShiftTime < 7 || shift.endDateTime.includes('d')) {
-                      userLoggedShifts.push(shift);
-                    }
+                    
                   }
 
                   if (userLoggedShifts.length > 0) {

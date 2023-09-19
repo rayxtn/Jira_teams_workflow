@@ -1,7 +1,5 @@
 import React from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-
-
 /** import all components */
 import UserWithLoggedShifts from './components/UserWithLoggedShifts';
 import Username from './components/Username';
@@ -14,11 +12,12 @@ import Recovery from './components/Recovery';
 import Reset from './components/Reset';
 import Worklogsdata from './components/worklogsdata';
 import Worklogs from './components/Worklogs';
+//testing
 import PageNotFound from './components/PageNotFound';
 import ShiftsByWeekComponent from './components/weekshifts';
 import IssuesList from './components/issuesbyweek';
 import Bonusdata from './components/bonusdata';
-
+import UserData from './components/userdata';
 //import  Worklogs  from '../../server/controllers/jirapiController';
 //import Plans from '../../server/controllers/teamsapiController';
 
@@ -28,6 +27,10 @@ import { AuthorizeUser, ProtectRoute } from './middleware/auth'
 
 /** root routes */
 const router = createBrowserRouter([
+    {
+        path : 'usersdata',
+        element : <UserData></UserData>
+    },
     {
         path : '/usersloggedshifts',
         element : <UserWithLoggedShifts></UserWithLoggedShifts>
@@ -89,10 +92,7 @@ const router = createBrowserRouter([
     {
         path:'/bonusdata',
         element:<Bonusdata></Bonusdata>
-
     }
-
-   
 ])
 
 export default function App() {

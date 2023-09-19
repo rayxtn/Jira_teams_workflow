@@ -6,6 +6,8 @@ import WeeklyData from './issuesbyweek'; // Import the WeeklyData component
 import ShiftsData from './weekshifts';
 import UserData from './UserWithLoggedShifts';
 import BonusData from './bonusdata';
+import Profile from './Profile';
+
 
 
 const Dashboard = ({ userName }) => {
@@ -17,15 +19,18 @@ const Dashboard = ({ userName }) => {
   const [showShiftsData , setShowShiftsData] = useState(false);
   const [showUsersData,setShowUsersData] = useState(false);
   const [showBonusData, setShowBonusData] =useState(false);
+  const [showProfile, setShowProfile] =useState(false);
 
   const menuItems = [
     { title: 'Home', icon: '🏠' },
     { title: 'Profile', icon: '👤' },
+    { title: 'Users', icon: '👤' },
     { title: 'Update', icon: '⚙️' },
     { title: 'Worklogs', icon: '⚙️' },
     { title: 'Shifts', icon: '⚙️' },
     {title: 'Logged Users', icon: '⚙️'},
     { title: 'Workflow Bonus', icon: '⚙️' },
+
    
     // Add more menu items as needed
   ];
@@ -39,6 +44,7 @@ const Dashboard = ({ userName }) => {
     setShowShiftsData(false);
     setShowUsersData(false);
     setShowBonusData(false);
+    setShowProfile(false);
 
 
     if (title === 'Update') {
@@ -55,8 +61,10 @@ const Dashboard = ({ userName }) => {
     }
     if(title === 'Workflow Bonus') {
       setShowBonusData(true);
+    } 
+    if (title === 'Profile') {
+      setShowProfile(true);
     }
-    
     // Perform any additional logic or navigation here
   };
 
@@ -113,6 +121,7 @@ const Dashboard = ({ userName }) => {
           {activeMenuItem === 'Shifts' && showShiftsData && <ShiftsData />}
           {activeMenuItem === 'Logged Users' && showUsersData && <UserData/>}
           {activeMenuItem === 'Workflow Bonus' && showBonusData && <BonusData/>}
+          {activeMenuItem === 'Profile' && showProfile && <Profile />}
           {showComponent1 && <Component1 />}
           {showComponent2 && <Component2 />}
         </div>

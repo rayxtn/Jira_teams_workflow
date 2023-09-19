@@ -17,7 +17,7 @@ router.route('/login').post(controller.verifyUser,controller.login); // login in
 
 //router.route('/assigneddata').get(controller.getAllAssignees)
 
-
+router.route('/usersdata').get(controller.getUserdata)
 router.route('/bonusdata').get(controller.BonusLoggedShifts)
 router.route('/validation').get(controller.getUsersWithLoggedShifts)
 router.route('/gettodayshifts').get(controller.getUsersWithShiftsToday)
