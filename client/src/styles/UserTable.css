@@ -1,0 +1,49 @@
+/* UserTable.css */
+
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  
+  .user-table th, .user-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .user-table th {
+    background-color: #f2f2f2;
+  }
+  
+  .user-table tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+  }
+  
+  .user-table tbody tr:hover {
+    background-color: #ddd;
+  }
+  
+  button:first-child {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-right: 5px;
+  }
+  button{
+    background-color: #5936f4;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  
+  button:hover {
+    background-color: #d32f2f;
+  }
+  

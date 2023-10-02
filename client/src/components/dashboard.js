@@ -8,7 +8,8 @@ import UserData from './UserWithLoggedShifts';
 import BonusData from './bonusdata';
 import Profile from './Profile';
 import Home from './home';
-
+import Users from './usersdata';
+import AcUnitIcon from '@mui/icons-material/AcUnit';
 
 
 const Dashboard = ({ userName }) => {
@@ -22,12 +23,13 @@ const Dashboard = ({ userName }) => {
   const [showBonusData, setShowBonusData] =useState(false);
   const [showProfile, setShowProfile] =useState(false);
   const [showHome,setShowHome] =useState(false);
+  const [showUsers,setShowUsers] = useState(false);
 
   const menuItems = [
     { title: 'Home', icon: '🏠' },
     { title: 'Profile', icon: '👤' },
     { title: 'Users', icon: '👤' },
-    { title: 'Update', icon: '⚙️' },
+    { title: 'Update', icon:'' },
     { title: 'Worklogs', icon: '⚙️' },
     { title: 'Shifts', icon: '⚙️' },
     {title: 'Logged Users', icon: '⚙️'},
@@ -48,8 +50,11 @@ const Dashboard = ({ userName }) => {
     setShowUsersData(false);
     setShowBonusData(false);
     setShowProfile(false);
+    setShowUsers(false);
 
-
+    if (title === 'Users') {
+      setShowUsers(true);
+    }
     if (title === 'Update') {
       setShowButtons(true);
     }
@@ -123,7 +128,7 @@ const Dashboard = ({ userName }) => {
               </button>
             </div>
           )}
-
+          {activeMenuItem === 'Users' && showUsers && <Users />}
           {activeMenuItem === 'Worklogs' && showWeeklyData && <WeeklyData />}
           {activeMenuItem === 'Shifts' && showShiftsData && <ShiftsData />}
           {activeMenuItem === 'Logged Users' && showUsersData && <UserData/>}

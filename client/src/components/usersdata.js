@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import '../styles/UserTable.css'; // Import your CSS file
+import { FaBeer } from 'react-icons/fa';
+
 
 function UserTable() {
   const [users, setUsers] = useState([]);
@@ -9,9 +12,8 @@ function UserTable() {
       try {
         const response = await axios.get('http://localhost:8080/api/usersdata');
         const users = response.data;
-        users = setUsers(users);
+        setUsers(users);
         console.log(users);
-        
       } catch (error) {
         console.log(error);
       }
@@ -19,12 +21,11 @@ function UserTable() {
 
     fetchData();
   }, []);
-  
 
   return (
     <div>
-      <h2>User Table</h2>
-      <table>
+ 
+      <table className="user-table">
         <thead>
           <tr>
             <th>Username</th>
@@ -41,6 +42,10 @@ function UserTable() {
                 <button onClick={() => (user._id)}>
                   Delete
                 </button>
+                <button onClick={() => (user._id)}>
+                  rwx
+                </button>
+                <h3> Lets go for a <FaBeer />? </h3>
               </td>
             </tr>
           ))}
