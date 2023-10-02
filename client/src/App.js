@@ -12,20 +12,19 @@ import Recovery from './components/Recovery';
 import Reset from './components/Reset';
 import Worklogsdata from './components/worklogsdata';
 import Worklogs from './components/Worklogs';
-//testing
 import PageNotFound from './components/PageNotFound';
 import ShiftsByWeekComponent from './components/weekshifts';
 import IssuesList from './components/issuesbyweek';
 import Bonusdata from './components/bonusdata';
-import UserData from './components/userdata';
+import UserData from './components/usersdata';
 //import  Worklogs  from '../../server/controllers/jirapiController';
 //import Plans from '../../server/controllers/teamsapiController';
 
-/** auth middleware */
+/** AUTH middleware */
 import { AuthorizeUser, ProtectRoute } from './middleware/auth'
 
 
-/** root routes */
+/** ROOT ROUTES */
 const router = createBrowserRouter([
     {
         path : 'usersdata',

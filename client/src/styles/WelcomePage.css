@@ -1,0 +1,20 @@
+.welcome-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 50vh;
+    text-align: center;
+  }
+  
+  .welcome-heading {
+    font-size: 3rem;
+    color: #3498db; /* Choose your desired color */
+    margin-bottom: 1rem;
+  }
+  
+  .welcome-message {
+    font-size: 1.5rem;
+    color: #e74c3c; /* Choose your desired color */
+  }
+  

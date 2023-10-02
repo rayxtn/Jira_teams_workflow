@@ -141,10 +141,13 @@ import { response } from 'express';
 
 /////
 
+
+
+
 export async function getUserdata(req ,res)
 {
   const userdata= await UserModel.find();
-  res.send(userdata);
+   return res.send(userdata);
 }
 
 
