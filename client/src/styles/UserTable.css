@@ -9,11 +9,14 @@
   .user-table th, .user-table td {
     padding: 10px;
     text-align: left;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid rgb(0, 119, 255);
   }
   
   .user-table th {
-    background-color: #f2f2f2;
+    background-color: rgb(137, 167, 211);
+  }
+  .user-table tr:hover {
+    background-color: rgb(5, 19, 39);
   }
   
   .user-table tbody tr:nth-child(even) {
@@ -24,7 +27,7 @@
     background-color: #ddd;
   }
   
-  button:first-child {
+  button {
     background-color: #f44336;
     color: white;
     border: none;

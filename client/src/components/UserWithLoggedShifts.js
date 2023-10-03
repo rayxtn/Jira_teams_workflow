@@ -11,6 +11,7 @@ function UserShiftsDisplay() {
       .then(response => response.json())
       .then(data => setUserShiftsData(data))
       .catch(error => console.error('Error fetching data:', error));
+      
   }, []);
 
   const toggleGroup = groupName => {

@@ -232,6 +232,7 @@ export async function getUsersWithLoggedShifts(req, response) {
                       groupedShifts[shiftDate].endDateTime = shift.endDateTime; // Extend the end time of the existing shift
                     }
                   });
+                  console.log(groupedShifts);
 
                   const userLoggedShifts = [];
                   for (const shiftDate in groupedShifts) {

@@ -1,4 +1,14 @@
+
+
 /* dashboard.css */
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh; /* Using min-height to center content vertically */
+  margin: 100;
+  background-color: #f2f2f2;
+}
 .dashboard {
   display: flex;
   background-color: #f7f9fc;
@@ -88,9 +98,7 @@
   transition: background-color 0.3s ease;
 }
 
-.cool-button:hover {
-  background-color: #2980b9;
-}
+
 
 h2 {
   color: #333;
@@ -112,9 +120,31 @@ h2 {
   }
 
   .content {
-    margin-top: 20px;
-    border-radius: 0;
+    margin-top: 30px;
+    margin-left: 30px;
+    border-radius: 3%;
     box-shadow: none;
-    padding: 20px 15px;
+    width: 100;
+
   }
+}
+.button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 50%; /* Adjust the gap between buttons as needed */
+}
+
+.cool-button {
+  padding: 20px 30px; /* Adjust the padding to make buttons bigger */
+  font-size: 18px; /* Adjust the font size as needed */
+  background-color: #3498db; /* Change the background color as desired */
+  color: #ffffff; /* Change the text color as desired */
+  border: none;
+  border-radius: 10px; /* Add rounded corners for a better look */
+  cursor: pointer;
+}
+
+.cool-button:hover {
+  background-color: #2980b9; /* Change the hover background color as desired */
 }

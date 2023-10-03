@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import '../styles/UserTable.css'; // Import your CSS file
-import { FaBeer } from 'react-icons/fa';
 
 
 function UserTable() {
@@ -45,7 +44,6 @@ function UserTable() {
                 <button onClick={() => (user._id)}>
                   rwx
                 </button>
-                <h3> Lets go for a <FaBeer />? </h3>
               </td>
             </tr>
           ))}

@@ -9,7 +9,6 @@ import BonusData from './bonusdata';
 import Profile from './Profile';
 import Home from './home';
 import Users from './usersdata';
-import AcUnitIcon from '@mui/icons-material/AcUnit';
 
 
 const Dashboard = ({ userName }) => {
@@ -27,13 +26,13 @@ const Dashboard = ({ userName }) => {
 
   const menuItems = [
     { title: 'Home', icon: '🏠' },
-    { title: 'Profile', icon: '👤' },
+    { title: 'Profile', icon: '🛠' },
     { title: 'Users', icon: '👤' },
-    { title: 'Update', icon:'' },
-    { title: 'Worklogs', icon: '⚙️' },
-    { title: 'Shifts', icon: '⚙️' },
-    {title: 'Logged Users', icon: '⚙️'},
-    { title: 'Workflow Bonus', icon: '⚙️' },
+    { title: 'Update', icon:'📡' },
+    { title: 'Worklogs', icon: '📥' },
+    { title: 'Shifts', icon: '📥' },
+    {title: 'Logged Users', icon: '📝'},
+    { title: 'Workflow Bonus', icon: '📟' },
 
    
     // Add more menu items as needed
