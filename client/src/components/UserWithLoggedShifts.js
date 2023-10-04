@@ -40,8 +40,8 @@ function UserShiftsDisplay() {
                 <table className="shift-table">
                   <thead>
                     <tr>
-                      <th>User</th>
-                      <th>Shift Date</th>
+                      <th>User Email</th>
+                      <th>Validated Shift for this week per day</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -49,11 +49,27 @@ function UserShiftsDisplay() {
                       <tr key={userIndex}>
                         <td>{user.userEmail}</td>
                         <td>
-                          <ul className="shift-list">
-                            {user.userLoggedShifts.map((shift, shiftIndex) => (
-                              <li key={shiftIndex}>{shift.startDateTime}</li>
-                            ))}
-                          </ul>
+                        <ul className="shift-list">
+  {user.userLoggedShifts.map((shift, shiftIndex) => {
+    // Initialize a variable to keep track of the previous shift date
+    const prevShiftDate =
+      shiftIndex > 0 ? user.userLoggedShifts[shiftIndex - 1].startDateTime : null;
+
+    // Check if the current shift date is different from the previous one
+    // If different or it's the first shift, render the date, otherwise, render nothing
+    if (shift.startDateTime !== prevShiftDate) {
+      return <li key={shiftIndex}>{shift.startDateTime}</li>;
+    } else {
+      return null;
+    }
+  })}
+</ul>
+
+
+
+
+
+
                         </td>
                       </tr>
                     ))}

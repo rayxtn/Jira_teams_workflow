@@ -1,14 +1,4 @@
 
-
-/* dashboard.css */
-body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh; /* Using min-height to center content vertically */
-  margin: 100;
-  background-color: #f2f2f2;
-}
 .dashboard {
   display: flex;
   background-color: #f7f9fc;

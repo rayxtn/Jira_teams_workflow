@@ -206,6 +206,7 @@ export async function getUsersWithLoggedShifts(req, response) {
               ))
           );
 
+
             const userInIssueByProject = IssueByProject[0]?.data?.find(
               (projectUser) =>
                 projectUser.users &&
@@ -234,16 +235,30 @@ export async function getUsersWithLoggedShifts(req, response) {
                   });
                   console.log(groupedShifts);
 
+
                   const userLoggedShifts = [];
                   for (const shiftDate in groupedShifts) {
+
                     const shift = groupedShifts[shiftDate];
                     const totalShiftTime = userWorklogs.reduce((total, worklog) => {
                       const wDate = new Date(worklog.worklogStarted).toISOString().split('T')[0];
                       if (   (wDate === shiftDate) && (worklog.worktimeSpent.includes('d')) ) {
-                        total += parseInt(worklog.worktimeSpent);
                         userLoggedShifts.push(shift);
                       }
-                      return total;
+                      else 
+                      if(  (wDate === shiftDate) && (worklog.worktimeSpent.includes('h')) && (worklog.worktimeSpent.includes('d') == false)  )
+                      {
+                        let x = (worklog.worktimeSpent.charAt(0));
+                        let value = parseInt(x);
+                        total = total + value;
+                        console.log(value);
+                        console.log("/////////////")
+                      }
+                      if(total >= 7 )
+                      {
+                       // userLoggedShifts.push(shift); 
+                      }
+                      //return total;
                     }, 0);
 
                     
@@ -252,7 +267,7 @@ export async function getUsersWithLoggedShifts(req, response) {
                   if (userLoggedShifts.length > 0) {
                     result[groupName].push({
                       userEmail: userEmail,
-                      userLoggedShifts: userLoggedShifts
+                      userLoggedShifts: userLoggedShifts,
                     });
                   }
                 }
@@ -450,8 +465,7 @@ export async function BonusLoggedShifts(req, response) {
 
 export async function connectMS(request, response) {
   try {
- 
-    // Set your app credentials and desired permissions
+    // Seting up credentials
     let data = qs.stringify({
       'grant_type': 'client_credentials',
       'client_id': 'd9452d4b-7b90-49cb-96a9-dbd03bbbc1ec',
@@ -460,7 +474,6 @@ export async function connectMS(request, response) {
       'client_secret': 'uo6k~B1F.2_yA~O5Mqf5rLMCP0KgXS14_Y',
       '': ''
     });
-
     let tokenConfig = {
       method: 'post',
       maxBodyLength: Infinity,
@@ -470,7 +483,6 @@ export async function connectMS(request, response) {
       },
       data: data
     };
-
     const tokenResponse = await axios.request(tokenConfig);
     const accessToken = tokenResponse.data.access_token;
 
@@ -487,13 +499,9 @@ export async function connectMS(request, response) {
 
     const startDateString = `${startOfWeek.getFullYear()}-${(startOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${startOfWeek.getDate().toString().padStart(2, '0')}`;
     const endDateString = `${endOfWeek.getFullYear()}-${(endOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${endOfWeek.getDate().toString().padStart(2, '0')}`;
-    
     const addeddate='T00:00:00.000Z';
-
     const startDate = startDateString.concat(addeddate);
     const endDate = endDateString.concat(addeddate);
-
-
     let shiftsConfig = {
       method: 'get',
       maxBodyLength: Infinity,
@@ -505,17 +513,14 @@ export async function connectMS(request, response) {
     };
     const shiftsResponse = await axios.request(shiftsConfig);
     const shiftsData = shiftsResponse.data;
-
     if (shiftsData && shiftsData.value && Array.isArray(shiftsData.value)) {
-      // Fetch user information for each user ID if permission is granted
+      // fetching user information if I have permission
       const userIds = shiftsData.value.map((shiftData) => shiftData.userId);
       const userDisplayNameMap = {};
       const userEmailMap = {};
-
       for (const userId of userIds) {
-        let displayName = userId; // Default to using userId as displayName
-        let email = null; // Initialize email as null
-
+        let displayName = userId; 
+        let email = null; 
         try {
           const userConfig = {
             method: 'get',
@@ -528,56 +533,44 @@ export async function connectMS(request, response) {
           const userResponse = await axios.request(userConfig);
           const userData = userResponse.data;
           displayName = userData.displayName;
-          email = userData.mail; // Get the email from the user data
+          // Getting the email from the user data
+          email = userData.mail; 
         } catch (error) {
           console.log('Failed to fetch user data:', error);
         }
-
         userDisplayNameMap[userId] = displayName;
         userEmailMap[userId] = email;
       }
-
-      // Organize the shifts data into groups (each group contains users, and each user has their shifts)
+      // Organizing the shifts data into groups
       const shiftsByGroup = {};
-
       for (const shiftData of shiftsData.value) {
         const sharedShift = shiftData.sharedShift || {};
         const groupId = shiftData.schedulingGroupId;
         const userId = shiftData.userId;
         const displayName = userDisplayNameMap[userId];
-        const email = userEmailMap[userId]; // Get the email for this user
-
+        // Get the email for this user
+        const email = userEmailMap[userId]; 
         if (!shiftsByGroup[groupId]) {
           // Fetch the group name if it doesn't exist in the shiftsByGroup object
-          let groupName = groupId; // Default to using groupId as groupName
-
+          let groupName = groupId; // using groupId as groupName as default value if the groupName does not exist
           try {
             const groupConfig = {
               method: 'get',
               maxBodyLength: Infinity,
               url: `https://graph.microsoft.com/v1.0/groups/${groupId}`,
               headers: {
-                'Authorization': 'Bearer ' + accessToken
-              }
-            };
+                'Authorization': 'Bearer ' + accessToken  }   };
             const groupResponse = await axios.request(groupConfig);
             const groupData = groupResponse.data;
             groupName = groupData.displayName;
           } catch (error) {
-            console.log('Failed to fetch group data:', error);
-          }
-
-          shiftsByGroup[groupId] = { groupName, users: {} };
-        }
-
+            console.log('Failed to fetch group data:', error);   }
+          shiftsByGroup[groupId] = { groupName, users: {} };  }
         if (!shiftsByGroup[groupId].users[userId]) {
           shiftsByGroup[groupId].users[userId] = {
             displayName,
             email, // Include the email in the response
-            shifts: [],
-          };
-        }
-
+            shifts: [],   };   }
         shiftsByGroup[groupId].users[userId].shifts.push({
           id: shiftData.id,
           displayName:sharedShift.displayName,
@@ -597,22 +590,19 @@ export async function connectMS(request, response) {
           endOfWeek: endDate,
         shiftsByGroup: shiftsByGroup,
       };
-      // Save or update the response data in the database
+      // Save or update the response in the database
     const existingData = await ShiftsByWeek.findOne({ startDate, endDate });
     if (existingData) {
-      // Update existing entry
+      // Update existing data in the database
       existingData.data = shiftsByGroup;
       await existingData.save();
     } else {
-      // Create new entry
+      // 
       const newShiftsByWeek = new ShiftsByWeek({
         startDate,
         endDate,
-        data: shiftsByGroup,
-      });
-      await newShiftsByWeek.save();
-    }
-
+        data: shiftsByGroup,  });
+      await newShiftsByWeek.save(); }
       response.json({ responseData });
     } else {
       throw new Error('Invalid shifts data received');
