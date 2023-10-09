@@ -17,6 +17,7 @@ import Project from '../model/issues.model.js';
 import ShiftsByWeek from '../model/ShiftsByWeek.model.js';
 import IssuesByProject from '../model/IssuesByProject.model.js';
 import { response } from 'express';
+import ShiftsByWeekModel from '../model/ShiftsByWeek.model.js';
 
 
 
@@ -151,33 +152,99 @@ export async function getUserdata(req ,res)
 }
 
 
+export async function fakegetUsersWithLoggedShifts()
+{
+  try{
+    //getting the start and end data of the current week to search for Shifts and Worklogs
+    const today = new Date();
+    const currentDay = today.getDay(); 
+
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(startOfWeek.getDate() +7); // Set to next Sunday midnight
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const startDateString = `${startOfWeek.getFullYear()}-${(startOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${startOfWeek.getDate().toString().padStart(2, '0')}`;
+    const endDateString = `${endOfWeek.getFullYear()}-${(endOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${endOfWeek.getDate().toString().padStart(2, '0')}`;
+    const addeddate='T00:00:00.000Z';
+    const startDate = startDateString.concat(addeddate);
+    const endDate = endDateString.concat(addeddate);
+    console.log(startDate,endDate);
+
+    const shiftsByWeekData = await ShiftsByWeek.find({
+      startDate: { $gte: startDate },
+      endDate: { $lte: endDate }
+    });
+    const IssuesByProject = await IssuesByProject.find({
+      startDate: { $gte: startDate},
+      endDate: { $lte: endDate}
+    });
+
+    for(const project in IssuesByProject) {
+      for(const user in project[id]){
+        console.log(user.displayName);
+      }
+
+
+    }
+
+
+
+
+
+
+
+
+    console.log(shiftsByWeekData);
+    console.log("*********************************");
+    console.log(IssuesByProject);
+
+
+
+
+
+  }catch(err){
+    console.log(err.message);
+
+  }
+}
+
+
+
 export async function getUsersWithLoggedShifts(req, response) {
   try {
     const today = new Date();
-    const currentDay = today.getDay();
+    const currentDay = today.getDay(); 
 
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - currentDay);
-    startDate.setHours(0, 0, 0, 0);
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+    startOfWeek.setHours(0, 0, 0, 0);
 
-    const endDate = new Date(today);
-    endDate.setDate(startDate.getDate() + 7);
-    endDate.setHours(23, 59, 59, 999);
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(startOfWeek.getDate() +7); // Set to next Sunday midnight
+    endOfWeek.setHours(23, 59, 59, 999);
 
-    const addeddate = 'T00:00:00.000Z';
-
-    const start = startDate.toISOString().split('T')[0] + addeddate;
-    const end = endDate.toISOString().split('T')[0] + addeddate;
+    const startDateString = `${startOfWeek.getFullYear()}-${(startOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${startOfWeek.getDate().toString().padStart(2, '0')}`;
+    const endDateString = `${endOfWeek.getFullYear()}-${(endOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${endOfWeek.getDate().toString().padStart(2, '0')}`;
+    const addeddate='T00:00:00.000Z';
+    const start = startDateString.concat(addeddate);
+    const end = endDateString.concat(addeddate);
 
     const shiftsByWeekData = await ShiftsByWeek.find({
       startDate: { $gte: start },
       endDate: { $lte: end }
     });
-
+    
     const IssueByProject = await IssuesByProject.find({
       startDate: { $gte: start },
       endDate: { $lte: end }
     });
+
+    console.log(start,end);
+
 
     const result = {};
 
@@ -233,36 +300,63 @@ export async function getUsersWithLoggedShifts(req, response) {
                       groupedShifts[shiftDate].endDateTime = shift.endDateTime; // Extend the end time of the existing shift
                     }
                   });
-                  console.log(groupedShifts);
+                 // console.log(groupedShifts);
 
 
-                  const userLoggedShifts = [];
-                  for (const shiftDate in groupedShifts) {
-
-                    const shift = groupedShifts[shiftDate];
-                    const totalShiftTime = userWorklogs.reduce((total, worklog) => {
-                      const wDate = new Date(worklog.worklogStarted).toISOString().split('T')[0];
-                      if (   (wDate === shiftDate) && (worklog.worktimeSpent.includes('d')) ) {
-                        userLoggedShifts.push(shift);
-                      }
-                      else 
-                      if(  (wDate === shiftDate) && (worklog.worktimeSpent.includes('h')) && (worklog.worktimeSpent.includes('d') == false)  )
-                      {
-                        let x = (worklog.worktimeSpent.charAt(0));
-                        let value = parseInt(x);
-                        total = total + value;
-                        console.log(value);
-                        console.log("/////////////")
-                      }
-                      if(total >= 7 )
-                      {
-                       // userLoggedShifts.push(shift); 
-                      }
-                      //return total;
-                    }, 0);
-
-                    
-                  }
+                 const userLoggedShifts = [];
+                 const millisecondsInADay = 24 * 60 * 60 * 1000; // Number of milliseconds in a day
+                 
+                 // Create a reference date for the start of the week (Sunday at midnight)
+                 const referenceDate = new Date();
+                 referenceDate.setHours(0, 0, 0, 0);
+                 const currentDay = referenceDate.getDay(); // Get the current day of the week (0 = Sunday, 1 = Monday, ...)
+                 
+                 // Calculate the start date of the week (last Sunday at midnight)
+                 const startDate = new Date(referenceDate.getTime() - (currentDay * millisecondsInADay));
+                 
+                 // Calculate the end date of the week (next Sunday at midnight)
+                 const endDate = new Date(startDate.getTime() + (7 * millisecondsInADay) - 1);
+                 
+                 // Iterate through the days of the week
+                 for (let i = 1; i < 8; i++) {
+                   const currentDate = new Date(startDate.getTime() + (i * millisecondsInADay));
+                   const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' }); // Get the day name
+                 
+                   let totalShiftTime = 0; // Initialize totalShiftTime to zero for each day
+                   let userValidatedDay = false; // Initialize a flag for user validation
+                   let shiftCount = 0; // Initialize shift count to zero
+                 
+                   for (const worklog of userWorklogs) {
+                     const wDate = new Date(worklog.worklogStarted).toISOString().split('T')[0];
+                 
+                     if (wDate === currentDate.toISOString().split('T')[0]) {
+                       if (worklog.worktimeSpent.includes('d')) {
+                         // If a full day is logged, set totalShiftTime to 24 hours to indicate a full day
+                         totalShiftTime = 24;
+                         userValidatedDay = true;
+                         break; // No need to check further
+                       }
+                 
+                       if (worklog.worktimeSpent.includes('h')) {
+                         const x = parseFloat(worklog.worktimeSpent); // Parse hours as a floating-point number
+                         totalShiftTime += x;
+                         shiftCount++;
+                       }
+                     }
+                   }
+                 
+                   console.log(`Week Starting from: ${startDate.toISOString().split('T')[0]}, Ending on: ${endDate.toISOString().split('T')[0]}`);
+                   console.log(`Day of the Week: ${dayName}, Total Shifts: ${shiftCount}, Total Hours Worked: ${totalShiftTime} hours`);
+                 
+                   if (totalShiftTime >= 7 || userValidatedDay) {
+                     userLoggedShifts.push({ weekStart: startDate.toISOString().split('T')[0], weekEnd: endDate.toISOString().split('T')[0], dayOfWeek: dayName, shifts: shiftCount, totalHours: totalShiftTime });
+                     console.log(`User validated the day on shift at date ${dayName}`);
+                   }
+                 }
+                 
+                 
+                 
+                 
 
                   if (userLoggedShifts.length > 0) {
                     result[groupName].push({
@@ -415,49 +509,6 @@ export async function BonusLoggedShifts(req, response) {
 
 
 
-///////
-
-
-
-
-
-
-// const userswithnoshifts = [];
-
-    // // Loop through the groups inside the 'data' property
-    // for (const groupKey in shiftsByWeekData[0].data) {
-    //   if (shiftsByWeekData[0].data.hasOwnProperty(groupKey)) {
-    //     const group = shiftsByWeekData[0].data[groupKey];
-
-    //     // Loop through the users in the current group
-    //     for (const userKey in group.users) {
-    //       if (group.users.hasOwnProperty(userKey)) {
-    //         const user = group.users[userKey];
-
-    //         const userShifts = [];
-
-    //         // Loop through the shifts of the current user
-    //         user.shifts.forEach((shift) => {
-    //           // Check if the display name contains "Esprit", "Off", or has no specific keyword
-    //           if (shift.displayName.includes("Esprit") || shift.displayName.includes("Off") || shift.displayName.includes(" ")) {
-    //             userShifts.push(shift);
-    //           }
-    //         });
-
-    //         // If the user has shifts with specific display names, add them to the shiftsWithSpecificDisplayNames array
-    //         if (userShifts.length > 0) {
-    //           userswithnoshifts.push({
-    //             groupName: group.groupName,
-    //             user: {
-    //               displayName: user.displayName,
-    //               shifts: userShifts
-    //             }
-    //           });
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
 
 
 
@@ -487,14 +538,14 @@ export async function connectMS(request, response) {
     const accessToken = tokenResponse.data.access_token;
 
     const today = new Date();
-    const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
+    const currentDay = today.getDay(); 
 
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - currentDay); // Set to Sunday midnight
     startOfWeek.setHours(0, 0, 0, 0);
 
     const endOfWeek = new Date(today);
-    endOfWeek.setDate(startOfWeek.getDate() + 7); // Set to next Sunday midnight
+    endOfWeek.setDate(startOfWeek.getDate() +7); // Set to next Sunday midnight
     endOfWeek.setHours(23, 59, 59, 999);
 
     const startDateString = `${startOfWeek.getFullYear()}-${(startOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${startOfWeek.getDate().toString().padStart(2, '0')}`;
