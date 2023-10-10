@@ -41,23 +41,30 @@ function UserShiftsDisplay() {
                     <tr>
                       <th>User Email</th>
                       <th>User Name</th>
-                      <th>Validated Shift for this week per day</th>
+                      <th>Validated Shifts</th>
+                      <th>Validation Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {group.map((user, userIndex) => (
-                      <tr key={userIndex}>
+                      <tr key={userIndex} >
                         <td>{user.userEmail}</td>
                         <td>{user.userName}</td>
                         <td>
                           <ul className="shift-list">
-                            {user.userLoggedShifts
-                              .map((shift, shiftIndex) => (
-                                <li key={shiftIndex}>
-                                  {`Day of the Week: ${shift.dayOfWeek}, Total Shifts: ${shift.shifts}, Total Hours Worked: ${shift.totalHours}`}
-                                </li>
-                              ))}
+                            {user.userLoggedShifts.map((shift, shiftIndex) => (
+                              <li key={shiftIndex}>
+                                {`${shift.dayOfWeek} ${shift.shift},Shifts: ${shift.shifts}`}
+                              </li>
+                    ))}
                           </ul>
+                        </td>
+                        <td className={user.status ? 'green-row' : 'red-row'}>
+                          {user.status ? (
+                            <span className="green-text">User validated the whole week shifts</span>
+                          ) : (
+                            <span className="red-text">User did not validate shifts for the week</span>
+                          )}
                         </td>
                       </tr>
                     ))}

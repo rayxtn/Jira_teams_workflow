@@ -333,13 +333,14 @@ export async function getUsersWithLoggedShifts(req, response) {
                     if (wDate.toISOString().split('T')[0] === currentDate.toISOString().split('T')[0]) {
                       if (worklog.worktimeSpent.includes('d')) {
                         userValidatedDay = true;
+                        shiftCount++;
                         userLoggedShifts.push({
                           dayOfWeek: wDayName, // Use the day of the week
-                          shifts: 1,
-                          totalHours: "the whole day",
-                          shift: Shift,
-                          dateshift: wDate.toISOString().split('T')[0],
-                          thedate: currentDate.toISOString().split('T')[0]
+                          shifts: shiftCount,
+                          totalHours: 8,
+                          shift: "Validated",
+                          // dateshift: wDate.toISOString().split('T')[0],
+                          // thedate: currentDate.toISOString().split('T')[0]
                         });
                         break; // Don't process further for this day
                       } else if (worklog.worktimeSpent.includes('h') && !worklog.worktimeSpent.includes('d')) {
@@ -362,18 +363,27 @@ export async function getUsersWithLoggedShifts(req, response) {
                        dayOfWeek: dayName,
                        shifts: shiftCount,
                        totalHours: totalShiftTime,
-                       shift: Shift,
-                      
+                       shift: "Validated",
                      });
                    }
                  }
-                 
+
+                 let userStatus =false;
+                  if(userLoggedShifts.length > 4)
+                  {
+                     userStatus = true;
+                  }
+                  else
+                  {
+                    userStatus =false;
+                  }
                  
                  
                   if (userLoggedShifts.length > 0) {
                     result[groupName].push({
                       userEmail: userEmail,
                       userName: user.displayName,
+                      status:userStatus,
                       userLoggedShifts: userLoggedShifts,
                     });
                   }

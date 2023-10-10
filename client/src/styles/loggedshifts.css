@@ -1,78 +1,66 @@
-/* UserShiftsDisplay.css */
-
-/* Style for the entire component container */
 .user-shifts-container {
-    font-family: Arial, sans-serif;
-    padding: 20px;
-    background-color: #f8f8f8;
-  }
-  
-  /* Style for each group container */
-  .group-container {
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    margin-bottom: 20px;
-    padding: 15px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    background-color: white;
-  }
-  
-  /* Style for the group name */
-  .group-name {
-    cursor: pointer;
-    color: #007bff;
-    margin: 0;
-    padding: 5px 0;
-    border-bottom: 1px solid #ccc;
-  }
-  
-  .group-name.expanded {
-    color: #009688;
-  }
-  
-  /* Style for the shift table */
-  .shift-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-  }
-  
-  /* Style for table header */
-  .shift-table th {
-    background-color: #f2f2f2;
-    border-bottom: 1px solid #ddd;
-    padding: 10px;
-    text-align: left;
-  }
-  
-  /* Style for table rows */
-  .shift-table td {
-    border-bottom: 1px solid #ddd;
-    padding: 10px;
-  }
-  
-  /* Style for alternating row colors */
-  .shift-table tbody tr:nth-child(even) {
-    background-color: #f2f2f2;
-  }
-  
-  /* Style for the user's shifts list */
-  .shift-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  
-  /* Style for individual shifts */
-  .shift-list li {
-    margin-bottom: 5px;
-    color: #555;
-  }
-  
-  /* Media query for responsiveness */
-  @media (max-width: 768px) {
-    .group-container {
-      padding: 10px;
-    }
-  }
-  
+  background-color: #f7f7f7ba;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin: 20px;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
+  size: 9px;
+}
+
+.group-container {
+  margin-bottom: 20px;
+  border: 1px solid;
+  border-radius: 5px;
+  padding: 10px;
+}
+
+.group-name {
+  cursor: pointer;
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  margin: 0;
+}
+
+
+
+.shift-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.shift-table th,
+.shift-table td {
+  border: 1px solid #0c0b0b34;
+  padding: 10px;
+  text-size-adjust: smaller;;
+  text-align: center;
+}
+
+.shift-table th {
+  background-color: #3498db;
+  color: rgb(57, 43, 43);
+}
+
+.green-row {
+  background-color: #b9e87b;
+  color: white;
+}
+
+.red-row {
+  background-color: #f67f72;
+  color: white;
+}
+
+.validation-text {
+  font-weight: bold;
+}
+
+.green-text {
+  color: #ffffff;
+}
+
+.red-text {
+  color: #ffffff;
+}
