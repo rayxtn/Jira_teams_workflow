@@ -11,7 +11,6 @@ function UserShiftsDisplay() {
       .then(response => response.json())
       .then(data => setUserShiftsData(data))
       .catch(error => console.error('Error fetching data:', error));
-      
   }, []);
 
   const toggleGroup = groupName => {
@@ -41,6 +40,7 @@ function UserShiftsDisplay() {
                   <thead>
                     <tr>
                       <th>User Email</th>
+                      <th>User Name</th>
                       <th>Validated Shift for this week per day</th>
                     </tr>
                   </thead>
@@ -48,28 +48,16 @@ function UserShiftsDisplay() {
                     {group.map((user, userIndex) => (
                       <tr key={userIndex}>
                         <td>{user.userEmail}</td>
+                        <td>{user.userName}</td>
                         <td>
-                        <ul className="shift-list">
-  {user.userLoggedShifts.map((shift, shiftIndex) => {
-    // Initialize a variable to keep track of the previous shift date
-    const prevShiftDate =
-      shiftIndex > 0 ? user.userLoggedShifts[shiftIndex - 1].startDateTime : null;
-
-    // Check if the current shift date is different from the previous one
-    // If different or it's the first shift, render the date, otherwise, render nothing
-    if (shift.startDateTime !== prevShiftDate) {
-      return <li key={shiftIndex}>{shift.startDateTime}</li>;
-    } else {
-      return null;
-    }
-  })}
-</ul>
-
-
-
-
-
-
+                          <ul className="shift-list">
+                            {user.userLoggedShifts
+                              .map((shift, shiftIndex) => (
+                                <li key={shiftIndex}>
+                                  {`Day of the Week: ${shift.dayOfWeek}, Total Shifts: ${shift.shifts}, Total Hours Worked: ${shift.totalHours}`}
+                                </li>
+                              ))}
+                          </ul>
                         </td>
                       </tr>
                     ))}

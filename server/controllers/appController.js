@@ -301,70 +301,84 @@ export async function getUsersWithLoggedShifts(req, response) {
                     }
                   });
                  // console.log(groupedShifts);
-
-
                  const userLoggedShifts = [];
-                 const millisecondsInADay = 24 * 60 * 60 * 1000; // Number of milliseconds in a day
+
+                 const today = new Date();
+                 const currentDay = today.getDay();
                  
-                 // Create a reference date for the start of the week (Sunday at midnight)
-                 const referenceDate = new Date();
-                 referenceDate.setHours(0, 0, 0, 0);
-                 const currentDay = referenceDate.getDay(); // Get the current day of the week (0 = Sunday, 1 = Monday, ...)
+                 const startOfWeek = new Date(today);
+                 startOfWeek.setDate(today.getDate() - currentDay);
+                 startOfWeek.setHours(0, 0, 0, 0);
                  
-                 // Calculate the start date of the week (last Sunday at midnight)
-                 const startDate = new Date(referenceDate.getTime() - (currentDay * millisecondsInADay));
+                 const endOfWeek = new Date(today);
+                 endOfWeek.setDate(startOfWeek.getDate() + 7);
+                 endOfWeek.setHours(23, 59, 59, 999);
                  
-                 // Calculate the end date of the week (next Sunday at midnight)
-                 const endDate = new Date(startDate.getTime() + (7 * millisecondsInADay) - 1);
                  
-                 // Iterate through the days of the week
-                 for (let i = 1; i < 8; i++) {
-                   const currentDate = new Date(startDate.getTime() + (i * millisecondsInADay));
-                   const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' }); // Get the day name
+                 for (let i = 0; i < 7; i++) {
+
+                   const currentDate = new Date(startOfWeek);
+                   currentDate.setDate(startOfWeek.getDate() + i);
+                   const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+                   console.log(dayName);
                  
-                   let totalShiftTime = 0; // Initialize totalShiftTime to zero for each day
-                   let userValidatedDay = false; // Initialize a flag for user validation
-                   let shiftCount = 0; // Initialize shift count to zero
+                   let totalShiftTime = 0;
+                   let userValidatedDay = false;
+                   let shiftCount = 0;
                  
                    for (const worklog of userWorklogs) {
-                     const wDate = new Date(worklog.worklogStarted).toISOString().split('T')[0];
+                    const wDate = new Date(worklog.worklogStarted); // Convert worklog date to Date object
+                    const wDayName = wDate.toLocaleDateString('en-US', { weekday: 'long' }); // Get the day of the week
+                  
+                    if (wDate.toISOString().split('T')[0] === currentDate.toISOString().split('T')[0]) {
+                      if (worklog.worktimeSpent.includes('d')) {
+                        userValidatedDay = true;
+                        userLoggedShifts.push({
+                          dayOfWeek: wDayName, // Use the day of the week
+                          shifts: 1,
+                          totalHours: "the whole day",
+                          shift: Shift,
+                          dateshift: wDate.toISOString().split('T')[0],
+                          thedate: currentDate.toISOString().split('T')[0]
+                        });
+                        break; // Don't process further for this day
+                      } else if (worklog.worktimeSpent.includes('h') && !worklog.worktimeSpent.includes('d')) {
+                        const x = parseFloat(worklog.worktimeSpent);
+                        totalShiftTime += x;
+                        shiftCount++;
+                      }
+                    }
+                  }
                  
-                     if (wDate === currentDate.toISOString().split('T')[0]) {
-                       if (worklog.worktimeSpent.includes('d')) {
-                         // If a full day is logged, set totalShiftTime to 24 hours to indicate a full day
-                         totalShiftTime = 24;
-                         userValidatedDay = true;
-                         break; // No need to check further
-                       }
+                  //  if ( totalShiftTime >= 7 ) { // Only print for days validated by 'h' (not 'd')
+                  //    console.log(`Day of the Week: ${dayName}, Total Shifts: ${shiftCount}, Total Hours Worked: ${totalShiftTime} hours`);
+                  //  }
+                  //  if(userValidatedDay){
+                  //   console.log(`Day of the Week: ${dayName}, Total Shifts: ${shiftCount}, Total Hours Worked: ${totalShiftTime} hours`);
+                  //  }
                  
-                       if (worklog.worktimeSpent.includes('h')) {
-                         const x = parseFloat(worklog.worktimeSpent); // Parse hours as a floating-point number
-                         totalShiftTime += x;
-                         shiftCount++;
-                       }
-                     }
-                   }
-                 
-                   console.log(`Week Starting from: ${startDate.toISOString().split('T')[0]}, Ending on: ${endDate.toISOString().split('T')[0]}`);
-                   console.log(`Day of the Week: ${dayName}, Total Shifts: ${shiftCount}, Total Hours Worked: ${totalShiftTime} hours`);
-                 
-                   if (totalShiftTime >= 7 || userValidatedDay) {
-                     userLoggedShifts.push({ weekStart: startDate.toISOString().split('T')[0], weekEnd: endDate.toISOString().split('T')[0], dayOfWeek: dayName, shifts: shiftCount, totalHours: totalShiftTime });
-                     console.log(`User validated the day on shift at date ${dayName}`);
+                   if ((totalShiftTime >= 7 )&& !userValidatedDay) {
+                     userLoggedShifts.push({
+                       dayOfWeek: dayName,
+                       shifts: shiftCount,
+                       totalHours: totalShiftTime,
+                       shift: Shift,
+                      
+                     });
                    }
                  }
                  
                  
                  
-                 
-
                   if (userLoggedShifts.length > 0) {
                     result[groupName].push({
                       userEmail: userEmail,
+                      userName: user.displayName,
                       userLoggedShifts: userLoggedShifts,
                     });
                   }
                 }
+
               });
             }
           }
@@ -378,7 +392,6 @@ export async function getUsersWithLoggedShifts(req, response) {
     response.status(500).send('Internal server error');
   }
 }
-
 
 
 
