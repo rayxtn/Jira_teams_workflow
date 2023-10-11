@@ -213,23 +213,23 @@ export async function fakegetUsersWithLoggedShifts()
 }
 
 
-
 export async function getUsersWithLoggedShifts(req, response) {
+
   try {
     const today = new Date();
-    const currentDay = today.getDay(); 
+    const currentDay = today.getDay();
 
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - currentDay); // Set to Sunday midnight
     startOfWeek.setHours(0, 0, 0, 0);
 
-    const endOfWeek = new Date(today);
-    endOfWeek.setDate(startOfWeek.getDate() +7); // Set to next Sunday midnight
+    const endOfWeek =new Date(today);
+    endOfWeek.setDate(startOfWeek.getDate() + 7); // Set to next Sunday midnight
     endOfWeek.setHours(23, 59, 59, 999);
 
     const startDateString = `${startOfWeek.getFullYear()}-${(startOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${startOfWeek.getDate().toString().padStart(2, '0')}`;
     const endDateString = `${endOfWeek.getFullYear()}-${(endOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${endOfWeek.getDate().toString().padStart(2, '0')}`;
-    const addeddate='T00:00:00.000Z';
+    const addeddate = 'T00:00:00.000Z';
     const start = startDateString.concat(addeddate);
     const end = endDateString.concat(addeddate);
 
@@ -237,24 +237,24 @@ export async function getUsersWithLoggedShifts(req, response) {
       startDate: { $gte: start },
       endDate: { $lte: end }
     });
-    
+
+    // Retrieve the worklogs for the specified date range
     const IssueByProject = await IssuesByProject.find({
       startDate: { $gte: start },
       endDate: { $lte: end }
     });
 
-    console.log(start,end);
-
-
-    const result = {};
+    console.log(start, end);
+    const worklogsData = {};
+    const shiftsData = {};
 
     for (const groupKey in shiftsByWeekData[0].data) {
       if (shiftsByWeekData[0].data.hasOwnProperty(groupKey)) {
         const group = shiftsByWeekData[0].data[groupKey];
         const groupName = group.groupName;
 
-        if (!result[groupName]) {
-          result[groupName] = [];
+        if (!shiftsData[groupName]) {
+          shiftsData[groupName] = {};
         }
 
         for (const userKey in group.users) {
@@ -262,146 +262,110 @@ export async function getUsersWithLoggedShifts(req, response) {
             const user = group.users[userKey];
             const userEmail = user.email;
 
-            const userShifts = user.shifts.filter((shift) =>
-            (shift.displayName &&
-              ["Day", "Night", "Midnight", "day", "night", "mid-", "midnight"].some(keyword =>
-                shift.displayName.includes(keyword)
-              )) ||
-            (shift.notes &&
-              ["Day", "Night", "Midnight", "day", "night", "mid-", "midnight"].some(keyword =>
-                shift.notes.includes(keyword)
-              ))
-          );
+            const userShifts = user.shifts.filter((shift) => {
+              const validKeywords = ["Intermediate", "esprit", "Off", "l2", "Vacation"];
+              const displayNameMatch = shift.displayName && validKeywords.some(keyword => shift.displayName.toLowerCase().includes(keyword.toLowerCase()));
+              const notesMatch = shift.notes && validKeywords.some(keyword => shift.notes.toLowerCase().includes(keyword.toLowerCase()));
+              return displayNameMatch || notesMatch;
+            });    
+            
+            if (userShifts.length > 0) {
+              if (!shiftsData[groupName][userEmail]) {
+                shiftsData[groupName][userEmail] = [];
+              }
 
-
-            const userInIssueByProject = IssueByProject[0]?.data?.find(
-              (projectUser) =>
-                projectUser.users &&
-                projectUser.users.some((projUser) => projUser.email === userEmail)
-            );
-
-            if (userInIssueByProject && userInIssueByProject.users) {
-              userInIssueByProject.users.forEach((projectUser) => {
-                if (projectUser.email === userEmail && projectUser.issues) {
-                  const userWorklogs = projectUser.issues.flatMap((issue) =>
-                    (issue.worklogs || []).map((worklog) => ({
-                      userEmail: userEmail,
-                      worklogStarted: new Date(worklog.started),
-                      worktimeSpent: worklog.timeSpent,
-                    }))
-                  );
-
-                  const groupedShifts = {}; // To group shifts by date
-                  userShifts.forEach((shift) => {
-                    const shiftDate = new Date(shift.startDateTime).toISOString().split('T')[0];
-                    if (!groupedShifts[shiftDate]) {
-                      groupedShifts[shiftDate] = shift;
-                    } else {
-                      groupedShifts[shiftDate].endDateTime = shift.endDateTime; // Extend the end time of the existing shift
-                    }
-                  });
-                 // console.log(groupedShifts);
-                 const userLoggedShifts = [];
-
-                 const today = new Date();
-                 const currentDay = today.getDay();
-                 
-                 const startOfWeek = new Date(today);
-                 startOfWeek.setDate(today.getDate() - currentDay);
-                 startOfWeek.setHours(0, 0, 0, 0);
-                 
-                 const endOfWeek = new Date(today);
-                 endOfWeek.setDate(startOfWeek.getDate() + 7);
-                 endOfWeek.setHours(23, 59, 59, 999);
-                 
-                 
-                 for (let i = 0; i < 7; i++) {
-
-                   const currentDate = new Date(startOfWeek);
-                   currentDate.setDate(startOfWeek.getDate() + i);
-                   const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
-                   console.log(dayName);
-                 
-                   let totalShiftTime = 0;
-                   let userValidatedDay = false;
-                   let shiftCount = 0;
-                 
-                   for (const worklog of userWorklogs) {
-                    const wDate = new Date(worklog.worklogStarted); // Convert worklog date to Date object
-                    const wDayName = wDate.toLocaleDateString('en-US', { weekday: 'long' }); // Get the day of the week
-                  
-                    if (wDate.toISOString().split('T')[0] === currentDate.toISOString().split('T')[0]) {
-                      if (worklog.worktimeSpent.includes('d')) {
-                        userValidatedDay = true;
-                        shiftCount++;
-                        userLoggedShifts.push({
-                          dayOfWeek: wDayName, // Use the day of the week
-                          shifts: shiftCount,
-                          totalHours: 8,
-                          shift: "Validated",
-                          // dateshift: wDate.toISOString().split('T')[0],
-                          // thedate: currentDate.toISOString().split('T')[0]
-                        });
-                        break; // Don't process further for this day
-                      } else if (worklog.worktimeSpent.includes('h') && !worklog.worktimeSpent.includes('d')) {
-                        const x = parseFloat(worklog.worktimeSpent);
-                        totalShiftTime += x;
-                        shiftCount++;
-                      }
-                    }
-                  }
-                 
-                  //  if ( totalShiftTime >= 7 ) { // Only print for days validated by 'h' (not 'd')
-                  //    console.log(`Day of the Week: ${dayName}, Total Shifts: ${shiftCount}, Total Hours Worked: ${totalShiftTime} hours`);
-                  //  }
-                  //  if(userValidatedDay){
-                  //   console.log(`Day of the Week: ${dayName}, Total Shifts: ${shiftCount}, Total Hours Worked: ${totalShiftTime} hours`);
-                  //  }
-                 
-                   if ((totalShiftTime >= 7 )&& !userValidatedDay) {
-                     userLoggedShifts.push({
-                       dayOfWeek: dayName,
-                       shifts: shiftCount,
-                       totalHours: totalShiftTime,
-                       shift: "Validated",
-                     });
-                   }
-                 }
-
-                 let userStatus =false;
-                  if(userLoggedShifts.length > 4)
-                  {
-                     userStatus = true;
-                  }
-                  else
-                  {
-                    userStatus =false;
-                  }
-                 
-                 
-                  if (userLoggedShifts.length > 0) {
-                    result[groupName].push({
-                      userEmail: userEmail,
-                      userName: user.displayName,
-                      status:userStatus,
-                      userLoggedShifts: userLoggedShifts,
-                    });
-                  }
-                }
-
+              userShifts.forEach((shift) => {
+                const filteredShift = {
+                  shiftdisplayName: shift.displayName,
+                  startDateTime: shift.startDateTime,
+                  shiftnote: shift.notes
+                };
+                shiftsData[groupName][userEmail].push(filteredShift);
               });
             }
           }
         }
       }
     }
+    // looping worklogs data 
+    for (const projectUser of IssueByProject[0]?.data || []) {
+      if (projectUser.users) {
+        for (const user of projectUser.users) {
+          const userEmail = user.email;
+          const userDisplayName = user.displayName;
 
-    response.send(result);
+          const userWorklogs = user.issues.flatMap((issue) =>
+            (issue.worklogs || []).map((worklog) => {
+              if (worklog && worklog.timeSpent) {
+                if (worklog.started && (worklog.started)) {
+                  return {
+                    worklogStarted: worklog.started,
+                    worktimeSpent: worklog.timeSpent,
+                  };
+                } else {
+                  console.log('Invalid worklog.started:', worklog.started);
+                  // Handle the case where worklog.started is not a valid date
+                }
+              }
+            })
+          );
+
+          // Group worklogs with the same date based on their worklogStarted date
+          const worklogsGrouped = {};
+
+          userWorklogs.forEach((worklog) => {
+            const { worklogStarted } = worklog;
+            const dateKey = worklogStarted;
+
+            if (!worklogsGrouped[dateKey]) {
+              worklogsGrouped[dateKey] = [];
+            }
+            worklogsGrouped[dateKey].push(worklog);
+          });
+
+          // Calculate total time spent for worklogs with more than one shift
+          const worklogsTotalTime = {};
+          for (const dateKey in worklogsGrouped) {
+            if (worklogsGrouped[dateKey].length > 0) {
+              let totalSpentTime = 0;
+              let shiftcount =0;
+              worklogsGrouped[dateKey].forEach((worklog) => {
+                // Extract and sum the time spent from worklogs with "h"
+                if (worklog.worktimeSpent.includes("h")) {
+                  totalSpentTime += parseFloat(worklog.worktimeSpent);
+                  shiftcount++;
+                }
+                if (worklog.worktimeSpent.includes("d")) {
+                  totalSpentTime = 8;
+                  shiftcount=1;
+                }
+              });
+              worklogsTotalTime[dateKey] = {
+                totalSpentTime:totalSpentTime,
+                shiftcount:shiftcount
+              }
+            }
+          }
+
+          worklogsData[userEmail] = {
+            userDisplayName: userDisplayName,
+            worklogsTotalTime: worklogsTotalTime,
+          };
+        }
+      }
+    }
+
+   return  response.send({shiftsData,
+      worklogsData});
+
   } catch (error) {
     console.error('Failed to fetch data from the database:', error);
     response.status(500).send('Internal server error');
   }
 }
+
+  
+
 
 
 
@@ -445,7 +409,6 @@ export async function BonusLoggedShifts(req, response) {
       endDate: { $lte: end }
     });
 
-    const result = {};
 
     for (const groupKey in shiftsByWeekData[0].data) {
       if (shiftsByWeekData[0].data.hasOwnProperty(groupKey)) {
