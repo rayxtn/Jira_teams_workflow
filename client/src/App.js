@@ -7,7 +7,6 @@ import Password from './components/Password';
 import Dashboard from './components/dashboard';
 import Register from './components/Register';
 import Teamshifts from './components/teamshifts';
-import Profile from './components/Profile';
 import Recovery from './components/Recovery';
 import Reset from './components/Reset';
 import Worklogsdata from './components/worklogsdata';
@@ -17,6 +16,8 @@ import ShiftsByWeekComponent from './components/weekshifts';
 import IssuesList from './components/issuesbyweek';
 import Bonusdata from './components/bonusdata';
 import UserData from './components/usersdata';
+import Profile from './components/Profile';
+
 //import  Worklogs  from '../../server/controllers/jirapiController';
 //import Plans from '../../server/controllers/teamsapiController';
 
@@ -91,7 +92,8 @@ const router = createBrowserRouter([
     {
         path:'/bonusdata',
         element:<Bonusdata></Bonusdata>
-    }
+    },
+
 ])
 
 export default function App() {

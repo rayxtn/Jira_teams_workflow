@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/loggedshifts.css'; // Import the CSS file
+import { FaTrash } from 'react-icons/fa'; // Import the trash icon
 
 function UserShiftsDisplay() {
   const [userShiftsData, setUserShiftsData] = useState([]);
@@ -20,62 +21,91 @@ function UserShiftsDisplay() {
     }));
   };
 
+  const handleDeleteUser = (groupName, userEmail) => {
+    // Use window.confirm to show a confirmation dialog
+    const shouldDelete = window.confirm("Are you sure you want to delete this user?");
+
+    if (shouldDelete) {
+      // Create a copy of userShiftsData
+      const updatedUserShiftsData = { ...userShiftsData };
+
+      // Remove the user from the data
+      delete updatedUserShiftsData[groupName][userEmail];
+
+      // Update the state with the modified data
+      setUserShiftsData(updatedUserShiftsData);
+    }
+  };
+
   return (
     <div className="user-shifts-container">
       {Object.keys(userShiftsData).map((groupName, groupIndex) => {
         const group = userShiftsData[groupName];
         const isGroupExpanded = expandedGroups[groupName] || false;
 
-        if (group.length > 0) {
-          return (
-            <div key={groupIndex} className="group-container">
-              <h2
-                className={`group-name ${isGroupExpanded ? 'expanded' : ''}`}
-                onClick={() => toggleGroup(groupName)}
-              >
-                Group Name: {groupName}
-              </h2>
-              {isGroupExpanded && (
-                <table className="shift-table">
-                  <thead>
-                    <tr>
-                      <th>User Email</th>
-                      <th>User Name</th>
-                      <th>Validated Shifts</th>
-                      <th>Validation Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {group.map((user, userIndex) => (
-                      <tr key={userIndex} >
-                        <td>{user.userEmail}</td>
-                        <td>{user.userName}</td>
+        const nonEmptyUsers = Object.keys(group).filter(userEmail => group[userEmail].length > 0);
+
+        if (nonEmptyUsers.length === 0) {
+          return null; // Skip rendering groups with no users having shifts
+        }
+
+        return (
+          <div key={groupIndex} className="group-container">
+            <h2
+              className={`group-name ${isGroupExpanded ? 'expanded' : ''}`}
+              onClick={() => toggleGroup(groupName)}
+            >
+              Group Name: {groupName}
+            </h2>
+            {isGroupExpanded && (
+              <table className="shift-table">
+                <thead>
+                  <tr>
+                    <th>User Email</th>
+                    <th>User Name</th>
+                    <th>Shifts</th>
+                    <th>Validation Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {nonEmptyUsers.map((userEmail, userIndex) => {
+                    const user = group[userEmail];
+                    return (
+                      <tr key={userIndex}>
+                        <td>{userEmail}</td>
+                        <td>{user[0].userName}</td>
                         <td>
                           <ul className="shift-list">
-                            {user.userLoggedShifts.map((shift, shiftIndex) => (
+                            {user.map((shift, shiftIndex) => (
                               <li key={shiftIndex}>
-                                {`${shift.dayOfWeek} ${shift.shift},Shifts: ${shift.shifts}`}
+                                {`Day: ${shift.startDateTime}, || ${shift.shiftdisplayName}, || ${shift.validated}`}
                               </li>
-                    ))}
+                            ))}
                           </ul>
                         </td>
-                        <td className={user.status ? 'green-row' : 'red-row'}>
-                          {user.status ? (
-                            <span className="green-text">User validated the whole week shifts</span>
+                        <td>
+                          {user.every(shift => shift.validated) ? (
+                            <span className="green-text">User validated all the mentioned shifts</span>
                           ) : (
-                            <span className="red-text">User did not validate shifts for the week</span>
+                            <span className="red-text">User did not validate all shifts</span>
                           )}
                         </td>
+                        <td>
+                          <FaTrash
+                            onClick={() => handleDeleteUser(groupName, userEmail)}
+                            size={24} // You can adjust the size as needed
+                            className="delete-icon"
+                          />
+                        </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          );
-        } else {
-          return null; // Do not render empty groups
-        }
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        );
       })}
     </div>
   );

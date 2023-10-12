@@ -261,9 +261,10 @@ export async function getUsersWithLoggedShifts(req, response) {
           if (group.users.hasOwnProperty(userKey)) {
             const user = group.users[userKey];
             const userEmail = user.email;
+            const userName= user.displayName;
 
             const userShifts = user.shifts.filter((shift) => {
-              const validKeywords = ["Intermediate", "esprit", "Off", "l2", "Vacation"];
+              const validKeywords = ["Night", "Mid-Night", "Day", "Mid", "Intermediate"];
               const displayNameMatch = shift.displayName && validKeywords.some(keyword => shift.displayName.toLowerCase().includes(keyword.toLowerCase()));
               const notesMatch = shift.notes && validKeywords.some(keyword => shift.notes.toLowerCase().includes(keyword.toLowerCase()));
               return displayNameMatch || notesMatch;
@@ -276,6 +277,7 @@ export async function getUsersWithLoggedShifts(req, response) {
 
               userShifts.forEach((shift) => {
                 const filteredShift = {
+                  userName:userName,
                   shiftdisplayName: shift.displayName,
                   startDateTime: shift.startDateTime,
                   shiftnote: shift.notes
@@ -315,7 +317,9 @@ export async function getUsersWithLoggedShifts(req, response) {
 
           userWorklogs.forEach((worklog) => {
             const { worklogStarted } = worklog;
-            const dateKey = worklogStarted;
+            const dateKey =  new Date(worklogStarted).toISOString().slice(0, 10);
+           
+            
 
             if (!worklogsGrouped[dateKey]) {
               worklogsGrouped[dateKey] = [];
@@ -340,10 +344,12 @@ export async function getUsersWithLoggedShifts(req, response) {
                   shiftcount=1;
                 }
               });
+              if(totalSpentTime >= 7){
               worklogsTotalTime[dateKey] = {
                 totalSpentTime:totalSpentTime,
                 shiftcount:shiftcount
               }
+            }
             }
           }
 
@@ -354,9 +360,49 @@ export async function getUsersWithLoggedShifts(req, response) {
         }
       }
     }
+    console.log(worklogsData);
+    // do a loop for the shiftdata for each user and that useremail is the same as the user in
+    //the  worklog in worklogdata and the  then create an object to contains the useremail and username and the shift date with her display name
+// Loop through shiftsData and add a "validated" flag to each shift
+const result = {};
 
-   return  response.send({shiftsData,
-      worklogsData});
+for (const groupKey in shiftsData) {
+  if (shiftsData.hasOwnProperty(groupKey)) {
+    result[groupKey] = {};
+    const group = shiftsData[groupKey];
+
+    for (const userEmail in group) {
+      if (group.hasOwnProperty(userEmail) && group[userEmail].length > 0) {
+        result[groupKey][userEmail] = [];
+
+        if (userEmail in worklogsData) {
+          const userWorklogs = worklogsData[userEmail].worklogsTotalTime || {};
+
+          for (const shift of group[userEmail]) {
+            shift.validated = false;
+            const shiftStartDateTime = new Date(shift.startDateTime).toISOString().slice(0, 10);
+            const shiftExistsInWorklogs = userWorklogs.hasOwnProperty(shiftStartDateTime);
+            if (shiftExistsInWorklogs && userWorklogs) {
+              // Add a "validated" flag to the shift
+              shift.validated = true;
+              console.log(shift.validated);
+            }
+
+            result[groupKey][userEmail].push(shift);
+          }
+          // Add user display name to the result once
+          result[groupKey][userEmail].userDisplayName = group[userEmail][0].userDisplayName || '';
+        }
+      }
+    }
+  }
+}
+
+return response.send(result);
+
+    
+// 'result' now contains the desired objects with user information and shift date with display name
+
 
   } catch (error) {
     console.error('Failed to fetch data from the database:', error);
@@ -386,107 +432,191 @@ export async function BonusLoggedShifts(req, response) {
     const today = new Date();
     const currentDay = today.getDay();
 
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - currentDay);
-    startDate.setHours(0, 0, 0, 0);
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+    startOfWeek.setHours(0, 0, 0, 0);
 
-    const endDate = new Date(today);
-    endDate.setDate(startDate.getDate() + 7);
-    endDate.setHours(23, 59, 59, 999);
+    const endOfWeek =new Date(today);
+    endOfWeek.setDate(startOfWeek.getDate() + 7); // Set to next Sunday midnight
+    endOfWeek.setHours(23, 59, 59, 999);
 
+    const startDateString = `${startOfWeek.getFullYear()}-${(startOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${startOfWeek.getDate().toString().padStart(2, '0')}`;
+    const endDateString = `${endOfWeek.getFullYear()}-${(endOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${endOfWeek.getDate().toString().padStart(2, '0')}`;
     const addeddate = 'T00:00:00.000Z';
-
-    const start = startDate.toISOString().split('T')[0] + addeddate;
-    const end = endDate.toISOString().split('T')[0] + addeddate;
+    const start = startDateString.concat(addeddate);
+    const end = endDateString.concat(addeddate);
 
     const shiftsByWeekData = await ShiftsByWeek.find({
       startDate: { $gte: start },
       endDate: { $lte: end }
     });
 
+    // Retrieve the worklogs for the specified date range
     const IssueByProject = await IssuesByProject.find({
       startDate: { $gte: start },
       endDate: { $lte: end }
     });
 
+    console.log(start, end);
+    const worklogsData = {};
+    const shiftsData = {};
 
     for (const groupKey in shiftsByWeekData[0].data) {
       if (shiftsByWeekData[0].data.hasOwnProperty(groupKey)) {
         const group = shiftsByWeekData[0].data[groupKey];
         const groupName = group.groupName;
 
-        if (!result[groupName]) {
-          result[groupName] = [];
+        if (!shiftsData[groupName]) {
+          shiftsData[groupName] = {};
         }
 
         for (const userKey in group.users) {
           if (group.users.hasOwnProperty(userKey)) {
             const user = group.users[userKey];
             const userEmail = user.email;
+            const userName= user.displayName;
 
-            const userShifts = user.shifts.filter((shift) =>
-              (shift.displayName && ["Intermediate", "intermediate","esprit","Esprit","Off","off","l2","L2","Vacation"].some(keyword => shift.displayName.includes(keyword))) ||
-              (shift.notes && ["Intermediate", "intermediate","esprit","Esprit","Off","off","l2","L2","Vacation"].some(keyword => shift.notes.includes(keyword)))
-            );
+            const userShifts = user.shifts.filter((shift) => {
+              const validKeywords = ["Vacation", "Esprit", "Off"];
+              const displayNameMatch = shift.displayName && validKeywords.some(keyword => shift.displayName.toLowerCase().includes(keyword.toLowerCase()));
+              const notesMatch = shift.notes && validKeywords.some(keyword => shift.notes.toLowerCase().includes(keyword.toLowerCase()));
+              return displayNameMatch || notesMatch;
+            });    
+            
+            if (userShifts.length > 0) {
+              if (!shiftsData[groupName][userEmail]) {
+                shiftsData[groupName][userEmail] = [];
+              }
 
-            const userInIssueByProject = IssueByProject[0]?.data?.find(
-              (projectUser) =>
-                projectUser.users &&
-                projectUser.users.some((projUser) => projUser.email === userEmail)
-            );
-
-            if (userInIssueByProject && userInIssueByProject.users) {
-              userInIssueByProject.users.forEach((projectUser) => {
-                if (projectUser.email === userEmail && projectUser.issues) {
-                  const userWorklogs = projectUser.issues.flatMap((issue) =>
-                    (issue.worklogs || []).map((worklog) => ({
-                      userEmail: userEmail,
-                      worklogStarted: new Date(worklog.started),
-                      worktimeSpent: worklog.timeSpent,
-                    }))
-                  );
-
-                  const groupedShifts = {}; // To group shifts by date
-                  userShifts.forEach((shift) => {
-                    const shiftDate = new Date(shift.startDateTime).toISOString().split('T')[0];
-                    if (!groupedShifts[shiftDate]) {
-                      groupedShifts[shiftDate] = shift;
-                    } else {
-                      groupedShifts[shiftDate].endDateTime = shift.endDateTime; // Extend the end time of the existing shift
-                    }
-                  });
-
-                  const userLoggedShifts = [];
-                  for (const shiftDate in groupedShifts) {
-                    const shift = groupedShifts[shiftDate];
-                    const totalShiftTime = userWorklogs.reduce((total, worklog) => {
-                      const wDate = new Date(worklog.worklogStarted).toISOString().split('T')[0];
-                      if (wDate === shiftDate) {
-                        total += parseInt(worklog.worktimeSpent);
-                      }
-                      return total;
-                    }, 0);
-
-                    if (totalShiftTime < 7 || shift.endDateTime.includes('d')) {
-                      userLoggedShifts.push(shift);
-                    }
-                  }
-
-                  if (userLoggedShifts.length > 0) {
-                    result[groupName].push({
-                      userEmail: userEmail,
-                      userLoggedShifts: userLoggedShifts
-                    });
-                  }
-                }
+              userShifts.forEach((shift) => {
+                const filteredShift = {
+                  userName:userName,
+                  shiftdisplayName: shift.displayName,
+                  startDateTime: shift.startDateTime,
+                  shiftnote: shift.notes
+                };
+                shiftsData[groupName][userEmail].push(filteredShift);
               });
             }
           }
         }
       }
     }
+    // looping worklogs data 
+    for (const projectUser of IssueByProject[0]?.data || []) {
+      if (projectUser.users) {
+        for (const user of projectUser.users) {
+          const userEmail = user.email;
+          const userDisplayName = user.displayName;
 
-    response.send(result);
+          const userWorklogs = user.issues.flatMap((issue) =>
+            (issue.worklogs || []).map((worklog) => {
+              if (worklog && worklog.timeSpent) {
+                if (worklog.started && (worklog.started)) {
+                  return {
+                    worklogStarted: worklog.started,
+                    worktimeSpent: worklog.timeSpent,
+                  };
+                } else {
+                  console.log('Invalid worklog.started:', worklog.started);
+                  // Handle the case where worklog.started is not a valid date
+                }
+              }
+            })
+          );
+
+          // Group worklogs with the same date based on their worklogStarted date
+          const worklogsGrouped = {};
+
+          userWorklogs.forEach((worklog) => {
+            const { worklogStarted } = worklog;
+            const dateKey =  new Date(worklogStarted).toISOString().slice(0, 10);
+           
+            
+
+            if (!worklogsGrouped[dateKey]) {
+              worklogsGrouped[dateKey] = [];
+            }
+            worklogsGrouped[dateKey].push(worklog);
+          });
+
+          // Calculate total time spent for worklogs with more than one shift
+          const worklogsTotalTime = {};
+          for (const dateKey in worklogsGrouped) {
+            if (worklogsGrouped[dateKey].length > 0) {
+              let totalSpentTime = 0;
+              let shiftcount =0;
+              worklogsGrouped[dateKey].forEach((worklog) => {
+                // Extract and sum the time spent from worklogs with "h"
+                if (worklog.worktimeSpent.includes("h")) {
+                  totalSpentTime += parseFloat(worklog.worktimeSpent);
+                  shiftcount++;
+                }
+                if (worklog.worktimeSpent.includes("d")) {
+                  totalSpentTime = 8;
+                  shiftcount=1;
+                }
+              });
+              if(totalSpentTime >= 7){
+              worklogsTotalTime[dateKey] = {
+                totalSpentTime:totalSpentTime,
+                shiftcount:shiftcount
+              }
+            }
+            }
+          }
+
+          worklogsData[userEmail] = {
+            userDisplayName: userDisplayName,
+            worklogsTotalTime: worklogsTotalTime,
+          };
+        }
+      }
+    }
+    console.log(worklogsData);
+    // do a loop for the shiftdata for each user and that useremail is the same as the user in
+    //the  worklog in worklogdata and the  then create an object to contains the useremail and username and the shift date with her display name
+// Loop through shiftsData and add a "validated" flag to each shift
+const result = {};
+
+for (const groupKey in shiftsData) {
+  if (shiftsData.hasOwnProperty(groupKey)) {
+    result[groupKey] = {};
+    const group = shiftsData[groupKey];
+
+    for (const userEmail in group) {
+      if (group.hasOwnProperty(userEmail) && group[userEmail].length > 0) {
+        result[groupKey][userEmail] = [];
+
+        if (userEmail in worklogsData) {
+          const userWorklogs = worklogsData[userEmail].worklogsTotalTime || {};
+
+          for (const shift of group[userEmail]) {
+            shift.validated = false;
+            const shiftStartDateTime = new Date(shift.startDateTime).toISOString().slice(0, 10);
+            const shiftExistsInWorklogs = userWorklogs.hasOwnProperty(shiftStartDateTime);
+            if (shiftExistsInWorklogs && userWorklogs) {
+              // Add a "validated" flag to the shift
+              shift.validated = true;
+              console.log(shift.validated);
+            }
+
+            result[groupKey][userEmail].push(shift);
+          }
+          // Add user display name to the result once
+          result[groupKey][userEmail].userDisplayName = group[userEmail][0].userDisplayName || '';
+        }
+      }
+    }
+  }
+}
+
+return response.send(result);
+
+    
+// 'result' now contains the desired objects with user information and shift date with display name
+
+
   } catch (error) {
     console.error('Failed to fetch data from the database:', error);
     response.status(500).send('Internal server error');

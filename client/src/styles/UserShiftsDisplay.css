@@ -1,6 +1,12 @@
 /* UserShiftsDisplay.css */
 
 /* Style for the entire component container */
+.green-text{
+  background-color: green;
+}
+.red-text{
+  background-color: rgb(128, 0, 0);
+}
 .user-shifts-container {
   font-family: Arial, sans-serif;
   padding: 20px;
@@ -39,10 +45,11 @@
 
 /* Style for table header */
 .shift-table th {
-  background-color: #f2f2f2;
+  background-color:rgb(73, 73, 97);
   border-bottom: 1px solid #ddd;
   padding: 10px;
   text-align: left;
+  border-radius: 6px;
 }
 
 /* Style for table rows */
