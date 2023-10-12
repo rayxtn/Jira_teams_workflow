@@ -2,6 +2,10 @@ import React from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 /** import all components */
 import UserWithLoggedShifts from './components/UserWithLoggedShifts';
+import Allworklogs from './components/all_worklogs';
+import Allshifts from './components/all_shifts';
+
+
 import Username from './components/Username';
 import Password from './components/Password';
 import Dashboard from './components/dashboard';
@@ -27,6 +31,16 @@ import { AuthorizeUser, ProtectRoute } from './middleware/auth'
 
 /** ROOT ROUTES */
 const router = createBrowserRouter([
+    {
+
+        path:'/allworklogs',
+        element: <Allworklogs></Allworklogs>
+    },
+    {
+
+        path:'/allshifts',
+        element: <Allshifts></Allshifts>
+    },
     {
         path : 'usersdata',
         element : <UserData></UserData>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import '../styles/loggedshifts.css'; // Import the CSS file
+import '../styles/UserShiftsDisplay.css'; // Import the CSS file
 import { FaTrash } from 'react-icons/fa'; // Import the trash icon
 
 function UserShiftsDisplay() {
@@ -77,12 +77,17 @@ function UserShiftsDisplay() {
                         <td>{user[0].userName}</td>
                         <td>
                           <ul className="shift-list">
-                            {user.map((shift, shiftIndex) => (
-                              <li key={shiftIndex}>
-                                {`Day: ${shift.startDateTime}, || ${shift.shiftdisplayName}, || ${shift.validated}`}
-                              </li>
-                            ))}
-                          </ul>
+                   {user.map((shift, shiftIndex) => {
+    // Assuming shift.startDateTime is in the format of a JavaScript Date object or a valid date string
+    const formattedDate = new Date(shift.startDateTime).toISOString().split('T')[0];
+    
+    return (
+      <li key={shiftIndex}>
+        {`Day: ${formattedDate}, || ${shift.shiftdisplayName}, || ${shift.validated}`}
+      </li>
+    );
+  })}
+</ul>
                         </td>
                         <td>
                           {user.every(shift => shift.validated) ? (

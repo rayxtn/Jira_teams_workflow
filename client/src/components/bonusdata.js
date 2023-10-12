@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import '../styles/loggedshifts.css'; // Import the CSS file
-import { FaTrash } from 'react-icons/fa'; // Import the trash icon
+import '../styles/UserShiftsDisplay.css'; // Import the CSS file
+import { FaTrash } from 'react-icons/fa'; // Import the trash 
+import { FcMoneyTransfer } from 'react-icons/fc';
 
 function UserShiftsDisplay() {
   const [userShiftsData, setUserShiftsData] = useState([]);
@@ -64,7 +65,6 @@ function UserShiftsDisplay() {
                     <th>User Email</th>
                     <th>User Name</th>
                     <th>Shifts</th>
-                    <th>Validation Status</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -76,20 +76,18 @@ function UserShiftsDisplay() {
                         <td>{userEmail}</td>
                         <td>{user[0].userName}</td>
                         <td>
-                          <ul className="shift-list">
-                            {user.map((shift, shiftIndex) => (
-                              <li key={shiftIndex}>
-                                {`Day: ${shift.startDateTime}, || ${shift.shiftdisplayName}, || ${shift.validated}`}
-                              </li>
-                            ))}
-                          </ul>
-                        </td>
-                        <td>
-                          {user.every(shift => shift.validated) ? (
-                            <span className="green-text">User validated all the mentioned shifts</span>
-                          ) : (
-                            <span className="red-text">User did not validate all shifts</span>
-                          )}
+                        <ul className="shift-list">
+  {user.map((shift, shiftIndex) => {
+    // Assuming shift.startDateTime is in the format of a JavaScript Date object or a valid date string
+    const formattedDate = new Date(shift.startDateTime).toISOString().split('T')[0];
+    
+    return (
+      <li key={shiftIndex}>
+        {`Day: ${formattedDate}, || ${shift.shiftdisplayName}`}
+      </li>
+    );
+  })}
+</ul>
                         </td>
                         <td>
                           <FaTrash
@@ -97,7 +95,16 @@ function UserShiftsDisplay() {
                             size={24} // You can adjust the size as needed
                             className="delete-icon"
                           />
+                          <br></br>
+                           <FcMoneyTransfer
+                            onClick={() =>"hi"}
+                            size={24} // You can adjust the size as needed
+                            className="FcMoneyTransfer"
+                          />
                         </td>
+
+
+                        
                       </tr>
                     );
                   })}

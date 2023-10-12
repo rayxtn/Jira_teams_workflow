@@ -30,8 +30,8 @@ router.route('/weekly').get(controller.getIssuesForCurrentWeek)
 
 
 //router.route('/fetchw').get(controller.fetchworklogs)
-
-
+router.route('/allshifts').get(controller.getall_shifts)
+router.route('/allworklogs').get(controller.getall_worklogs)
 router.route('/teams').get(controller.connectMS)
 router.route('/issues').get(controller.getIssues)
 router.route('/worklogs').get(controller.worklogs)
