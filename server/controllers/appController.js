@@ -43,6 +43,75 @@ export async function getall_shifts(req,response){
 
 
 
+
+export async function getUserdata(req ,res)
+{
+  const userdata= await UserModel.find();
+   return res.send(userdata);
+}
+
+
+export async function fakegetUsersWithLoggedShifts()
+{
+  try{
+    //getting the start and end data of the current week to search for Shifts and Worklogs
+    const today = new Date();
+    const currentDay = today.getDay(); 
+
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - currentDay+1);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(startOfWeek.getDate() +7); // Set to next Sunday midnight
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const startDateString = `${startOfWeek.getFullYear()}-${(startOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${startOfWeek.getDate().toString().padStart(2, '0')}`;
+    const endDateString = `${endOfWeek.getFullYear()}-${(endOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${endOfWeek.getDate().toString().padStart(2, '0')}`;
+    const addeddate='T00:00:00.000Z';
+    const startDate = startDateString.concat(addeddate);
+    const endDate = endDateString.concat(addeddate);
+    console.log(startDate,endDate);
+
+    const shiftsByWeekData = await ShiftsByWeek.find({
+      startDate: { $gte: startDate },
+      endDate: { $lte: endDate }
+    });
+    const IssuesByProject = await IssuesByProject.find({
+      startDate: { $gte: startDate},
+      endDate: { $lte: endDate}
+    });
+
+    for(const project in IssuesByProject) {
+      for(const user in project[id]){
+        console.log(user.displayName);
+      }
+
+
+    }
+
+
+
+
+
+
+
+
+    console.log(shiftsByWeekData);
+    console.log("*********************************");
+    console.log(IssuesByProject);
+
+
+
+
+
+  }catch(err){
+    console.log(err.message);
+
+  }
+}
+
+
 // export async function getUsersWithLoggedShifts(req, response) {
 //   try {
 //     const today = new Date();
@@ -162,77 +231,9 @@ export async function getall_shifts(req,response){
 //   }
 // }
 
-/////
 
 
 
-
-export async function getUserdata(req ,res)
-{
-  const userdata= await UserModel.find();
-   return res.send(userdata);
-}
-
-
-export async function fakegetUsersWithLoggedShifts()
-{
-  try{
-    //getting the start and end data of the current week to search for Shifts and Worklogs
-    const today = new Date();
-    const currentDay = today.getDay(); 
-
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - currentDay); // Set to Sunday midnight
-    startOfWeek.setHours(0, 0, 0, 0);
-
-    const endOfWeek = new Date(today);
-    endOfWeek.setDate(startOfWeek.getDate() +7); // Set to next Sunday midnight
-    endOfWeek.setHours(23, 59, 59, 999);
-
-    const startDateString = `${startOfWeek.getFullYear()}-${(startOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${startOfWeek.getDate().toString().padStart(2, '0')}`;
-    const endDateString = `${endOfWeek.getFullYear()}-${(endOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${endOfWeek.getDate().toString().padStart(2, '0')}`;
-    const addeddate='T00:00:00.000Z';
-    const startDate = startDateString.concat(addeddate);
-    const endDate = endDateString.concat(addeddate);
-    console.log(startDate,endDate);
-
-    const shiftsByWeekData = await ShiftsByWeek.find({
-      startDate: { $gte: startDate },
-      endDate: { $lte: endDate }
-    });
-    const IssuesByProject = await IssuesByProject.find({
-      startDate: { $gte: startDate},
-      endDate: { $lte: endDate}
-    });
-
-    for(const project in IssuesByProject) {
-      for(const user in project[id]){
-        console.log(user.displayName);
-      }
-
-
-    }
-
-
-
-
-
-
-
-
-    console.log(shiftsByWeekData);
-    console.log("*********************************");
-    console.log(IssuesByProject);
-
-
-
-
-
-  }catch(err){
-    console.log(err.message);
-
-  }
-}
 
 
 export async function getUsersWithLoggedShifts(req, response) {
@@ -242,7 +243,7 @@ export async function getUsersWithLoggedShifts(req, response) {
     const currentDay = today.getDay();
 
     const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+    startOfWeek.setDate(today.getDate() - currentDay+1);
     startOfWeek.setHours(0, 0, 0, 0);
 
     const endOfWeek =new Date(today);
@@ -318,14 +319,17 @@ export async function getUsersWithLoggedShifts(req, response) {
 
           const userWorklogs = user.issues.flatMap((issue) =>
             (issue.worklogs || []).map((worklog) => {
+
               if (worklog && worklog.timeSpent) {
-                if (worklog.started && (worklog.started)) {
+                const worklogsstarted = new Date(worklog.started).toISOString().split('T')[0];
+
+                if (worklogsstarted && (worklogsstarted)) {
                   return {
-                    worklogStarted: worklog.started,
-                    worktimeSpent: worklog.timeSpent,
+                    worklogStarted: worklogsstarted,
+                    worktimeSpent: worklogsstarted,
                   };
                 } else {
-                  console.log('Invalid worklog.started:', worklog.started);
+                  console.log('Invalid worklog.started:', worklogsstarted);
                   // Handle the case where worklog.started is not a valid date
                 }
               }
@@ -376,9 +380,24 @@ export async function getUsersWithLoggedShifts(req, response) {
         }
       }
     }
+        // Filter shiftsData to include only shifts with the same date as worklogsData
+        const filteredShiftsData = {};
 
-   return  response.send({shiftsData,
-      worklogsData});
+        for (const groupName in shiftsData) {
+          filteredShiftsData[groupName] = {};
+          for (const userEmail in shiftsData[groupName]) {
+            const userShifts = shiftsData[groupName][userEmail].filter((shift) => {
+              // Extract date from shift's startDateTime and compare with worklog date keys
+              const dateKey = new Date(shift.startDateTime).toISOString().split('T')[0];
+              return worklogsData.hasOwnProperty(userEmail) && worklogsData[userEmail].worklogsTotalTime.hasOwnProperty(dateKey);
+            });
+    
+            if (userShifts.length > 0) {
+              filteredShiftsData[groupName][userEmail] = userShifts;
+            }
+          }
+        }
+   return  response.send({filteredShiftsData});
 
   } catch (error) {
     console.error('Failed to fetch data from the database:', error);
@@ -409,7 +428,7 @@ export async function BonusLoggedShifts(req, response) {
     const currentDay = today.getDay();
 
     const startDate = new Date(today);
-    startDate.setDate(today.getDate() - currentDay);
+    startDate.setDate(today.getDate() - currentDay+1);
     startDate.setHours(0, 0, 0, 0);
 
     const endDate = new Date(today);
@@ -431,7 +450,7 @@ export async function BonusLoggedShifts(req, response) {
       endDate: { $lte: end }
     });
 
-
+const result={};
     for (const groupKey in shiftsByWeekData[0].data) {
       if (shiftsByWeekData[0].data.hasOwnProperty(groupKey)) {
         const group = shiftsByWeekData[0].data[groupKey];
@@ -549,7 +568,7 @@ export async function connectMS(request, response) {
     const currentDay = today.getDay(); 
 
     const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+    startOfWeek.setDate(today.getDate() - currentDay + 1);
     startOfWeek.setHours(0, 0, 0, 0);
 
     const endOfWeek = new Date(today);
@@ -680,7 +699,7 @@ export async function getIssues(req, res) {
     const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
 
     const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+    startOfWeek.setDate(today.getDate() - currentDay+1);
     startOfWeek.setHours(0, 0, 0, 0);
 
     const endOfWeek = new Date(today);
@@ -840,7 +859,7 @@ export async function getIssueDataForCurrentWeek(request , response) {
    const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
 
    const startDate = new Date(today);
-   startDate.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+   startDate.setDate(today.getDate() - currentDay+1);
    startDate.setHours(0, 0, 0, 0);
 
    const endDate = new Date(today);
@@ -917,7 +936,7 @@ export async function getCurrentWeekData(req, res) {
   const today = new Date();
   const currentDay = today.getDay(); 
   const weekStartDate = new Date(today);
-  weekStartDate.setDate(today.getDate() - currentDay);
+  weekStartDate.setDate(today.getDate() - currentDay+1);
   weekStartDate.setHours(0, 0, 0, 0);
 
   const weekEndDate = new Date(today);
@@ -1478,7 +1497,7 @@ export async function getShiftsByWeekForCurrentWeek(request, response) {
     const currentDay = today.getDay(); // 0 (Sunday) to 6 (Saturday)
 
     const startDate = new Date(today);
-    startDate.setDate(today.getDate() - currentDay); // Set to Sunday midnight
+    startDate.setDate(today.getDate() - currentDay +1); // Set to Sunday midnight
     startDate.setHours(0, 0, 0, 0);
 
     const endDate = new Date(today);

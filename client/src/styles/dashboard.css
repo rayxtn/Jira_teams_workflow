@@ -1,3 +1,54 @@
+/* Add this to your CSS file or create a new CSS file and link it to your component */
+
+/* Style for the top bar */
+.top-bar {
+  background-color: #37474F; /* Set your desired background color */
+  color: #FFFFFF; /* Set text color */
+  padding: 10px 20px; /* Adjust padding as needed */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Style for the logout button */
+.logout-button {
+  cursor: pointer;
+  background-color: #F44336; /* Set your desired button background color */
+  color: #FFFFFF; /* Set button text color */
+  padding: 10px 20px; /* Adjust padding as needed */
+  border: none;
+  border-radius: 4px;
+  transition: background-color 0.3s ease; /* Add a transition effect on hover */
+}
+
+.logout-button:hover {
+  background-color: #D32F2F; /* Change the background color on hover */
+}
+
+
+/* Add these styles at the end of your CSS file */
+.buttons-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px; /* Adjust the gap as needed for the desired separation */
+}
+
+.cool-button {
+  width: 200px; /* Adjust the width as needed */
+  padding: 10px;
+  text-align: center;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.cool-button:hover {
+  background-color: #0056b3; /* Change the background color on hover */
+}
 
 .dashboard {
   display: flex;

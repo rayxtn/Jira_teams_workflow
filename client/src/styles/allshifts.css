@@ -1,0 +1,137 @@
+/* Add CSS for styling */
+.shift-list {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .shift {
+    border: 1px solid #ddd;
+    margin: 10px 0;
+    padding: 10px;
+    cursor: pointer;
+  }
+  
+  .shift h3 {
+    margin: 0;
+    font-weight: bold;
+    color: #3498db;
+  }
+  
+  .group {
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    padding: 10px;
+    cursor: pointer;
+  }
+  
+  .group h4 {
+    margin: 0;
+    font-weight: bold;
+    color: #e74c3c;
+  }
+  
+  .group-details {
+    display: none;
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+  }
+  
+  /* Style the expand button */
+  .expand-button {
+    background-color: #3498db;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .expand-button:hover {
+    background-color: #2980b9;
+  }
+  
+  /* Add this CSS to your stylesheet or component */
+.nice {
+  font-size: 24px; /* Adjust the font size as needed */
+  font-weight: bold;
+  color: #0073e6; /* Change the color as needed */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); /* Add a text shadow */
+  transition: transform 0.2s ease; /* Add a smooth transition effect */
+}
+
+.nice:hover {
+  transform: scale(1.1); /* Add a scale effect on hover */
+}
+
+.nicer {
+  font-size: 18px; /* Adjust the font size as needed */
+  color: #444; /* Change the color as needed */
+  transition: color 0.2s ease; /* Add a smooth color transition effect */
+}
+
+.nicer:hover {
+  color: #0073e6; /* Change the color on hover */
+}
+
+/* Add this CSS to your stylesheet or component */
+
+.issue-container {
+  border: 2px solid #0073e6; /* Add a border with the desired color */
+  padding: 10px;
+  margin: 10px 0;
+  background-color: #f0f0f0; /* Set a background color */
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2); /* Add a box shadow */
+}
+
+.worklog-container {
+  border: 1px solid #ccc;
+  padding: 5px;
+  margin: 5px 0;
+  background-color: #fff;
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.issue-container:hover {
+  transform: scale(1.02); /* Add a scale effect on hover */
+}
+
+/* You can customize these styles further as per your design preferences. */
+
+.shift-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.centered-button {
+  text-align: center;
+  margin: 20px; /* Add margin for spacing */
+  padding: 10px; /* Add padding for better button appearance */
+  background-color: #3498db; /* Background color */
+  border: none;
+  border-radius: 4px;
+  color: white; /* Text color */
+  font-size: 16px; /* Font size */
+  cursor: pointer;
+  transition: background-color 0.3s; /* Smooth hover effect */
+
+  /* Optional: Add a box shadow for a 3D effect on hover */
+  &:hover {
+    background-color: #2980b9;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.centered-button button {
+  /* Optional: Add custom button styles here */
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+.centered-button button:hover {
+  /* Optional: Add styles for button hover state */
+  text-decoration: underline;
+}

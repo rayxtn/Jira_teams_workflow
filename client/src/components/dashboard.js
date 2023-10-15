@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import '../styles/dashboard.css'; // Import the CSS file for styling
 import Component1 from './Worklogs'; // Import the first component
 import Component2 from './teamshifts'; // Import the second component
-import WeeklyData from './issuesbyweek'; // Import the WeeklyData component
-import ShiftsData from './weekshifts';
+import WeeklyData from './all_worklogs'; // Import the WeeklyData component
+import ShiftsData from './all_shifts';
 import UserData from './UserWithLoggedShifts';
 import BonusData from './bonusdata';
-import updateProfile from './Profile';
 import Home from './home';
 import Users from './usersdata';
-
 
 const Dashboard = ({ userName }) => {
   const [activeMenuItem, setActiveMenuItem] = useState('Home');
@@ -17,25 +15,22 @@ const Dashboard = ({ userName }) => {
   const [showComponent1, setShowComponent1] = useState(false);
   const [showComponent2, setShowComponent2] = useState(false);
   const [showWeeklyData, setShowWeeklyData] = useState(false);
-  const [showShiftsData , setShowShiftsData] = useState(false);
-  const [showUsersData,setShowUsersData] = useState(false);
-  const [showBonusData, setShowBonusData] =useState(false);
-  const [showupdateProfile, setShowupdateProfile] =useState(false);
-  const [showHome,setShowHome] =useState(false);
-  const [showUsers,setShowUsers] = useState(false);
+  const [showShiftsData, setShowShiftsData] = useState(false);
+  const [showUsersData, setShowUsersData] = useState(false);
+  const [showBonusData, setShowBonusData] = useState(false);
+  const [showupdateProfile, setShowupdateProfile] = useState(false);
+  const [showHome, setShowHome] = useState(false);
+  const [showUsers, setShowUsers] = useState(false);
 
   const menuItems = [
     { title: 'Home', icon: '🏠' },
     { title: 'Profile', icon: '🛠' },
     { title: 'Users', icon: '👤' },
-    { title: 'Update', icon:'📡' },
+    { title: 'Update', icon: '📡' },
     { title: 'Worklogs', icon: '📥' },
     { title: 'Shifts', icon: '📥' },
-    {title: 'Logged Users', icon: '📝'},
+    { title: 'Logged Users', icon: '📝' },
     { title: 'Workflow Bonus', icon: '📟' },
-
-   
-    // Add more menu items as needed
   ];
 
   const handleMenuItemClick = (title) => {
@@ -57,8 +52,7 @@ const Dashboard = ({ userName }) => {
     if (title === 'Update') {
       setShowButtons(true);
     }
-    if(title === "Home")
-    {
+    if (title === 'Home') {
       setShowHome(true);
     }
     if (title === 'Worklogs') {
@@ -67,16 +61,15 @@ const Dashboard = ({ userName }) => {
     if (title === 'Shifts') {
       setShowShiftsData(true);
     }
-    if(title === 'Logged Users') {
+    if (title === 'Logged Users') {
       setShowUsersData(true);
     }
-    if(title === 'Workflow Bonus') {
+    if (title === 'Workflow Bonus') {
       setShowBonusData(true);
-    } 
+    }
     if (title === 'Profile') {
       setShowupdateProfile(true);
     }
-    // Perform any additional logic or navigation here
   };
 
   const handleButton1Click = () => {
@@ -89,8 +82,12 @@ const Dashboard = ({ userName }) => {
     setShowComponent2(true);
   };
 
+
+
   return (
     <div className="dashboard">
+
+
       <div className="sidebar">
         <div className="user-profile">
           <span className="user-icon">👤</span>
@@ -130,8 +127,8 @@ const Dashboard = ({ userName }) => {
           {activeMenuItem === 'Users' && showUsers && <Users />}
           {activeMenuItem === 'Worklogs' && showWeeklyData && <WeeklyData />}
           {activeMenuItem === 'Shifts' && showShiftsData && <ShiftsData />}
-          {activeMenuItem === 'Logged Users' && showUsersData && <UserData/>}
-          {activeMenuItem === 'Workflow Bonus' && showBonusData && <BonusData/>}
+          {activeMenuItem === 'Logged Users' && showUsersData && <UserData />}
+          {activeMenuItem === 'Workflow Bonus' && showBonusData && <BonusData />}
           {activeMenuItem === 'Home' && showHome && <Home />}
           {activeMenuItem === 'Profile' && showupdateProfile && <updateProfile />}
           {showComponent1 && <Component1 />}
