@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/UserShiftsDisplay.css'; // Import the CSS file
-import { FaTrash } from 'react-icons/fa'; // Import the trash icon
 
 function UserShiftsDisplay() {
-  const [userShiftsData, setUserShiftsData] = useState([]);
+  const [userShiftsData, setUserShiftsData] = useState({});
   const [expandedGroups, setExpandedGroups] = useState({});
 
   useEffect(() => {
@@ -21,33 +20,11 @@ function UserShiftsDisplay() {
     }));
   };
 
-  const handleDeleteUser = (groupName, userEmail) => {
-    // Use window.confirm to show a confirmation dialog
-    const shouldDelete = window.confirm("Are you sure you want to delete this user?");
-
-    if (shouldDelete) {
-      // Create a copy of userShiftsData
-      const updatedUserShiftsData = { ...userShiftsData };
-
-      // Remove the user from the data
-      delete updatedUserShiftsData[groupName][userEmail];
-
-      // Update the state with the modified data
-      setUserShiftsData(updatedUserShiftsData);
-    }
-  };
-
   return (
     <div className="user-shifts-container">
       {Object.keys(userShiftsData).map((groupName, groupIndex) => {
         const group = userShiftsData[groupName];
         const isGroupExpanded = expandedGroups[groupName] || false;
-
-        const nonEmptyUsers = Object.keys(group).filter(userEmail => group[userEmail].length > 0);
-
-        if (nonEmptyUsers.length === 0) {
-          return null; // Skip rendering groups with no users having shifts
-        }
 
         return (
           <div key={groupIndex} className="group-container">
@@ -58,56 +35,33 @@ function UserShiftsDisplay() {
               Group Name: {groupName}
             </h2>
             {isGroupExpanded && (
-              <table className="shift-table">
-                <thead>
-                  <tr>
-                    <th>User Email</th>
-                    <th>User Name</th>
-                    <th>Shifts</th>
-                    <th>Validation Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {nonEmptyUsers.map((userEmail, userIndex) => {
-                    const user = group[userEmail];
-                    return (
-                      <tr key={userIndex}>
-                        <td>{userEmail}</td>
-                        <td>{user[0].userName}</td>
-                        <td>
-                          <ul className="shift-list">
-                   {user.map((shift, shiftIndex) => {
-    // Assuming shift.startDateTime is in the format of a JavaScript Date object or a valid date string
-    const formattedDate = new Date(shift.startDateTime).toISOString().split('T')[0];
-    
-    return (
-      <li key={shiftIndex}>
-        {`Day: ${formattedDate}, || ${shift.shiftdisplayName}, || ${shift.validated}`}
-      </li>
-    );
-  })}
-</ul>
-                        </td>
-                        <td>
-                          {user.every(shift => shift.validated) ? (
-                            <span className="green-text">User validated all the mentioned shifts</span>
-                          ) : (
-                            <span className="red-text">User did not validate all shifts</span>
-                          )}
-                        </td>
-                        <td>
-                          <FaTrash
-                            onClick={() => handleDeleteUser(groupName, userEmail)}
-                            size={24} // You can adjust the size as needed
-                            className="delete-icon"
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <div className="user-container">
+                {Object.keys(group).map((userEmail, userIndex) => {
+                  const user = group[userEmail];
+
+                  return (
+                    <div key={userIndex} className="user-shifts">
+                      <h3>User Email: {userEmail}</h3>
+                      <ul className="shift-list">
+                        {Array.isArray(user.shifts) && user.shifts.length > 0
+                          ? user.shifts.map((shift, shiftIndex) => (
+                              <li key={shiftIndex}>
+                                <strong>Shift Name:</strong> {shift.shiftdisplayName}
+                                <br />
+                                <strong>Start Date:</strong> {shift.startDateTime}
+                                <br />
+                                <strong>Shift Note:</strong> {shift.shiftnote}
+                                <br />
+                                <strong>Validation Status:</strong> {shift.validated ? 'Validated' : 'Not Validated'}
+                              </li>
+                            ))
+                          : <li>No shifts for this user.</li>
+                        }
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         );

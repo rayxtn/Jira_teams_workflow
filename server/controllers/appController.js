@@ -280,36 +280,43 @@ export async function getUsersWithLoggedShifts(req, response) {
           shiftsData[groupName] = {};
         }
 
+
         for (const userKey in group.users) {
           if (group.users.hasOwnProperty(userKey)) {
             const user = group.users[userKey];
             const userEmail = user.email;
-
+            const userDisplayName = user.displayName;
+        
             const userShifts = user.shifts.filter((shift) => {
-              const validKeywords = ["Intermediate", "esprit", "Off", "l2", "Vacation"];
+              const validKeywords = ["day", "night", "mid-", "mid-night"];
               const displayNameMatch = shift.displayName && validKeywords.some(keyword => shift.displayName.toLowerCase().includes(keyword.toLowerCase()));
               const notesMatch = shift.notes && validKeywords.some(keyword => shift.notes.toLowerCase().includes(keyword.toLowerCase()));
               return displayNameMatch || notesMatch;
-            });    
-            
+            });
+        
             if (userShifts.length > 0) {
-              if (!shiftsData[groupName][userEmail]) {
-                shiftsData[groupName][userEmail] = [];
-              }
-
-              userShifts.forEach((shift) => {
-                const filteredShift = {
-                  shiftdisplayName: shift.displayName,
-                  startDateTime: shift.startDateTime,
-                  shiftnote: shift.notes
+              if (!shiftsData[userEmail]) {
+                shiftsData[userEmail] = {
+                  userDisplayName: userDisplayName,
+                  shifts: []
                 };
-                shiftsData[groupName][userEmail].push(filteredShift);
+              }
+        
+              userShifts.forEach((shift) => {
+                const shiftDate = new Date(shift.startDateTime);
+                const formattedShift = {
+                  shiftdisplayName: shift.displayName,
+                  startDateTime: shiftDate.toISOString().split('T')[0],
+                  shiftnote: shift.notes,
+                };
+                shiftsData[userEmail].shifts.push(formattedShift);
               });
             }
           }
         }
-      }
-    }
+        
+        // Now, shiftsData will contain user emails as keys, each with their display name and associated shifts
+      }}        
     // looping worklogs data 
     for (const projectUser of IssueByProject[0]?.data || []) {
       if (projectUser.users) {
@@ -326,7 +333,7 @@ export async function getUsersWithLoggedShifts(req, response) {
                 if (worklogsstarted && (worklogsstarted)) {
                   return {
                     worklogStarted: worklogsstarted,
-                    worktimeSpent: worklogsstarted,
+                    worktimeSpent: worklog.timeSpent,
                   };
                 } else {
                   console.log('Invalid worklog.started:', worklogsstarted);
@@ -349,55 +356,95 @@ export async function getUsersWithLoggedShifts(req, response) {
             worklogsGrouped[dateKey].push(worklog);
           });
 
-          // Calculate total time spent for worklogs with more than one shift
-          const worklogsTotalTime = {};
-          for (const dateKey in worklogsGrouped) {
-            if (worklogsGrouped[dateKey].length > 0) {
-              let totalSpentTime = 0;
-              let shiftcount =0;
-              worklogsGrouped[dateKey].forEach((worklog) => {
-                // Extract and sum the time spent from worklogs with "h"
-                if (worklog.worktimeSpent.includes("h")) {
-                  totalSpentTime += parseFloat(worklog.worktimeSpent);
-                  shiftcount++;
+        // Calculate total time spent for worklogs with more than one shift
+        const worklogsTotalTime = {};
+
+        for (const dateKey in worklogsGrouped) {
+          if (worklogsGrouped[dateKey].length > 0) {
+            let totalSpentTime = 0;
+            let shiftcount = 0;
+        
+            worklogsGrouped[dateKey].forEach((worklog) => {
+              const numericValueMatch = worklog.worktimeSpent.match(/(\d+(\.\d+)?)/);
+              
+              if (numericValueMatch) {
+                const numericValue = parseFloat(numericValueMatch[0]);
+        
+                if (worklog.worktimeSpent.includes("h") && !worklog.worktimeSpent.includes("d")) {
+                  totalSpentTime += numericValue;
+                } else if (worklog.worktimeSpent.includes("d")) {
+                  // Assuming a full day is 8 hours
+                  totalSpentTime += 8;
                 }
-                if (worklog.worktimeSpent.includes("d")) {
-                  totalSpentTime = 8;
-                  shiftcount=1;
+                
+                shiftcount++;
+              }
+            });
+        
+            worklogsTotalTime[dateKey] = {
+              totalSpentTime: totalSpentTime,
+              shiftcount: shiftcount,
+            };
+          }
+        }
+        
+        worklogsData[userEmail] = {
+          userDisplayName: userDisplayName,
+          worklogsTotalTime: worklogsTotalTime,
+        };
+        
+        
+        }}}
+       // Create an array to store matched user data
+          // Create an array to store matched user data
+
+    // Create an array to store matched user data
+    const matchedUserData = [];
+
+    for (const userEmail in shiftsData) {
+      if (shiftsData.hasOwnProperty(userEmail)) {
+        const userData = shiftsData[userEmail];
+        const userShifts = userData.shifts;
+
+        if (worklogsData[userEmail]) {
+          const userWorklogs = worklogsData[userEmail];
+
+          // Loop through shifts and worklogs
+          for (const shift of userShifts) {
+            for (const worklogDate in userWorklogs.worklogsTotalTime) {
+              if (userWorklogs.worklogsTotalTime.hasOwnProperty(worklogDate)) {
+                // Extract the date part from the shift and worklog
+                const shiftDate = shift.startDateTime.split('T')[0];
+
+                // Check if the dates match
+                if (shiftDate === worklogDate) {
+                  const userDisplayName = userWorklogs.userDisplayName;
+                  const validated = true;
+
+                  const userData = {
+                    userEmail: userEmail,
+                    userDisplayName: userDisplayName,
+                    shifts: userShifts,
+                    validated: validated,
+                  };
+
+                  matchedUserData.push(userData);
+                  // Break the loop if a match is found to avoid duplicate entries
+                  break;
                 }
-              });
-              worklogsTotalTime[dateKey] = {
-                totalSpentTime:totalSpentTime,
-                shiftcount:shiftcount
               }
             }
           }
-
-          worklogsData[userEmail] = {
-            userDisplayName: userDisplayName,
-            worklogsTotalTime: worklogsTotalTime,
-          };
         }
       }
     }
-        // Filter shiftsData to include only shifts with the same date as worklogsData
-        const filteredShiftsData = {};
 
-        for (const groupName in shiftsData) {
-          filteredShiftsData[groupName] = {};
-          for (const userEmail in shiftsData[groupName]) {
-            const userShifts = shiftsData[groupName][userEmail].filter((shift) => {
-              // Extract date from shift's startDateTime and compare with worklog date keys
-              const dateKey = new Date(shift.startDateTime).toISOString().split('T')[0];
-              return worklogsData.hasOwnProperty(userEmail) && worklogsData[userEmail].worklogsTotalTime.hasOwnProperty(dateKey);
-            });
-    
-            if (userShifts.length > 0) {
-              filteredShiftsData[groupName][userEmail] = userShifts;
-            }
-          }
-        }
-   return  response.send({filteredShiftsData});
+ 
+return response.send(matchedUserData);
+
+
+
+
 
   } catch (error) {
     console.error('Failed to fetch data from the database:', error);
