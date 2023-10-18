@@ -8,6 +8,7 @@ import UserData from './UserWithLoggedShifts';
 import BonusData from './bonusdata';
 import Home from './home';
 import Users from './usersdata';
+import Stats   from './stat';
 
 const Dashboard = ({ userName }) => {
   const [activeMenuItem, setActiveMenuItem] = useState('Home');
@@ -21,6 +22,7 @@ const Dashboard = ({ userName }) => {
   const [showupdateProfile, setShowupdateProfile] = useState(false);
   const [showHome, setShowHome] = useState(false);
   const [showUsers, setShowUsers] = useState(false);
+  const [showStats,setShowStats]= useState(false);
 
   const menuItems = [
     { title: 'Home', icon: '🏠' },
@@ -31,6 +33,7 @@ const Dashboard = ({ userName }) => {
     { title: 'Shifts', icon: '📥' },
     { title: 'Logged Users', icon: '📝' },
     { title: 'Workflow Bonus', icon: '📟' },
+    { title: 'statistics', icon: '🛠' }
   ];
 
   const handleMenuItemClick = (title) => {
@@ -45,6 +48,7 @@ const Dashboard = ({ userName }) => {
     setShowBonusData(false);
     setShowupdateProfile(false);
     setShowUsers(false);
+    setShowStats(false);
 
     if (title === 'Users') {
       setShowUsers(true);
@@ -69,6 +73,10 @@ const Dashboard = ({ userName }) => {
     }
     if (title === 'Profile') {
       setShowupdateProfile(true);
+    }
+    if(title === 'statistics')
+    {
+      setShowStats(true);
     }
   };
 
@@ -133,6 +141,7 @@ const Dashboard = ({ userName }) => {
           {activeMenuItem === 'Profile' && showupdateProfile && <updateProfile />}
           {showComponent1 && <Component1 />}
           {showComponent2 && <Component2 />}
+          {activeMenuItem === 'statistics' && showStats && <Stats />}
         </div>
       </div>
     </div>

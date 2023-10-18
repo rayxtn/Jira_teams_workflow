@@ -1,84 +1,104 @@
-/* UserShiftsDisplay.css */
-
-/* Style for the entire component container */
-.green-text{
-  background-color: green;
-}
-.red-text{
-  background-color: rgb(128, 0, 0);
-}
+/* User Shifts Container */
 .user-shifts-container {
   font-family: Arial, sans-serif;
-  padding: 20px;
-  background-color: #f8f8f8;
+  margin: 20px;
 }
 
-/* Style for each group container */
+/* Group Container */
 .group-container {
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  margin-bottom: 20px;
-  padding: 15px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  background-color: white;
+  background-color: #f0f0f0;
+  padding: 10px;
+  margin: 10px 0;
 }
 
-/* Style for the group name */
 .group-name {
+  font-size: 20px;
   cursor: pointer;
-  color: #007bff;
-  margin: 0;
-  padding: 5px 0;
-  border-bottom: 1px solid #ccc;
 }
 
-.group-name.expanded {
-  color: #009688;
+.group-name.expanded::before {
+  content: '▼ ';
 }
 
-/* Style for the shift table */
-.shift-table {
-  width: 100%;
+/* User Rows */
+.user-row {
+  padding: 10px;
+  margin: 10px 0;
+  border: 8px solid #ccc;
+}
+
+/* User Validated */
+.user-validated {
+  background-color: #e6ffe6;
+}
+
+/* User Not Validated */
+.user-not-validated {
+  background-color: #ffcccc;
+}
+
+/* Shifts Table */
+.shifts-table {
   border-collapse: collapse;
-  margin-top: 15px;
+  width: 100%;
+  border: 1px solid #ccc; /* Improved table border */
 }
 
-/* Style for table header */
-.shift-table th {
-  background-color:rgb(73, 73, 97);
-  border-bottom: 1px solid #ddd;
-  padding: 10px;
-  text-align: left;
-  border-radius: 6px;
+.shifts-table td {
+  padding: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px; /* Smaller text size */
 }
 
-/* Style for table rows */
-.shift-table td {
-  border-bottom: 1px solid #ddd;
-  padding: 10px;
+/* Validation Status */
+.status-cell {
+  text-align: center;
 }
 
-/* Style for alternating row colors */
-.shift-table tbody tr:nth-child(even) {
-  background-color: #f2f2f2;
+.validated-status.green {
+  color: green;
 }
 
-/* Style for the user's shifts list */
-.shift-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.validated-status.red {
+  color: red;
 }
 
-/* Style for individual shifts */
-.shift-list li {
-  margin-bottom: 5px;
-  color: #555;
+/* Table Titles */
+.user-info-title {
+  font-weight: bold;
+  color: blue;
 }
 
-/* Media query for responsiveness */
-@media (max-width: 768px) {
-  .group-container {
-    padding: 10px;
-  }
+.shifts-title {
+  font-weight: bold;
+  color: blue;
+}
+
+.status-title {
+  font-weight: bold;
+  color: blue;
+}
+
+/* Table Date Format */
+.date-format {
+  font-family: monospace;
+}
+/* CSS styles with custom class names */
+.button-group {
+  text-align: center;
+  margin-bottom: 20px; /* Add some spacing between buttons and content */
+}
+
+.custom-button {
+  margin: 5px; /* Add spacing between the buttons */
+  padding: 10px 20px;
+  background-color: #36D7B7; /* Background color */
+  color: white; /* Text color */
+  border: none; /* Remove button border */
+  border-radius: 5px; /* Rounded corners */
+  cursor: pointer;
+}
+
+.custom-button:hover {
+  background-color: #219f8d; /* Hover color */
 }

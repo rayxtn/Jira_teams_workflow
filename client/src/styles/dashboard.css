@@ -90,7 +90,7 @@
   cursor: pointer;
   padding: 10px 0;
   transition: background-color 0.3s ease, border-radius 0.3s ease, width 0.3s ease;
-  border-radius: 10px;
+  border-radius: 50px;
   width: 100%;
   display: flex;
   align-items: center;
@@ -115,8 +115,8 @@
 
 .content {
   flex: 1;
-  padding: 20px;
-  margin-left: 240px;
+  padding: 0px;
+  margin-left: 220px;
   background-color: #f7f9fc;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
   border-radius: 8px;

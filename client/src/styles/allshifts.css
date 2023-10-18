@@ -1,4 +1,7 @@
 /* Add CSS for styling */
+.red-b{
+  background-color: rgb(217, 92, 92);
+}
 .shift-list {
     list-style: none;
     padding: 0;
@@ -49,7 +52,11 @@
   .expand-button:hover {
     background-color: #2980b9;
   }
-  
+  /* Add this CSS to center the content in <td> elements */
+td {
+  text-align: center;
+  vertical-align: middle;
+}
   /* Add this CSS to your stylesheet or component */
 .nice {
   font-size: 24px; /* Adjust the font size as needed */
@@ -134,4 +141,32 @@
 .centered-button button:hover {
   /* Optional: Add styles for button hover state */
   text-decoration: underline;
+}
+/* Style the table headers with colors and borders */
+th {
+  background-color: #333; /* Dark background color */
+  color: #fff; /* Text color */
+  border: 1px solid #000; /* Border style */
+  padding: 8px; /* Padding to create some space around the content */
+}
+
+.progress-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px; /* Adjust the size as needed */
+}
+
+.loader {
+  border: 8px solid #e30000;
+  border-top: 8px solid #3498db;
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }

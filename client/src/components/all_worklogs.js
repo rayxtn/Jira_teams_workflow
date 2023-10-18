@@ -15,11 +15,19 @@ const ShiftDataComponent = () => {
   const [showWorkLogs, setShowWorkLogs] = useState(false);
 
   useEffect(() => {
+    setLoading(true); // Set loading to true when starting data fetching
     fetch('http://localhost:8080/api/allworklogs')
-      .then((response) => response.json())
-      .then((data) => setUserShiftsData(data))
-      .catch((error) => console.error('Error fetching data:', error));
+      .then(response => response.json())
+      .then(data => {
+        setUserShiftsData(data);
+        setLoading(false); // Set loading to false when data is loaded
+      })
+      .catch(error => {
+        console.error('Error fetching data:', error);
+        setLoading(false); // Set loading to false on error as well
+      });
   }, []);
+  const [loading, setLoading] = useState(true);
 
   const toggleExpand = (index) => {
     const updatedData = [...userShiftsData];
@@ -49,23 +57,28 @@ const ShiftDataComponent = () => {
     setShowWorkLogs(!showWorkLogs);
   };
 
-  
-  return (
+    return (
     <div className="shift-container">
     <div className="centered-button">
-      <button onClick={toggleWorkLogs}>
-        {showWorkLogs ? 'Hide WorkLogs data' : 'Click here for the current week worklogs'}
+    <button onClick={toggleWorkLogs}>
+        {showWorkLogs ? 'Hide Shifts data' : 'click here for the current week worklogs'}
       </button>
     </div>
-    {showWorkLogs && <WorkLogsComp />}
 
-    <p>Worklogs by week Archive</p>
+    {showWorkLogs && <WorkLogsComp />}
+    <p >Worklogs by week Archive</p><br></br>
+
+    {loading ? ( // Conditionally render the circular progress bar when loading is true
+      <div className="progress-bar">
+        <div className="loader"></div>
+      </div>
+    ) : (
 
       <table className="shift-table">
         <thead>
           <tr>
-            <th>Start Date</th>
-            <th>End Date</th>
+          <th>Start Of Week</th>
+            <th>End Of Week</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -79,7 +92,7 @@ const ShiftDataComponent = () => {
                   <button onClick={() => toggleExpand(index)}>
                     {item.expanded ? 'Collapse' : 'Expand'}
                   </button>
-                  <button onClick={() => handleDelete(index)}>
+                  <button className="red-b" onClick={() => handleDelete(index)}>
                     Delete
                   </button>
                 </td>
@@ -131,7 +144,7 @@ const ShiftDataComponent = () => {
             </React.Fragment>
           ))}
         </tbody>
-      </table>
+      </table>)}
     </div>
   );
 };

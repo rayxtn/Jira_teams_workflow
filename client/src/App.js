@@ -21,6 +21,7 @@ import IssuesList from './components/issuesbyweek';
 import Bonusdata from './components/bonusdata';
 import UserData from './components/usersdata';
 import Profile from './components/Profile';
+import Stats from './components/stat';
 
 //import  Worklogs  from '../../server/controllers/jirapiController';
 //import Plans from '../../server/controllers/teamsapiController';
@@ -31,6 +32,11 @@ import { AuthorizeUser, ProtectRoute } from './middleware/auth'
 
 /** ROOT ROUTES */
 const router = createBrowserRouter([
+    {
+
+        path:'/validationstats',
+        element:<Stats></Stats>
+    },
     {
 
         path:'/allworklogs',
