@@ -52,16 +52,14 @@ const ShiftDataComponent = () => {
   };
 
   const handleDelete = (index) => {
-    // You can send a request to your backend to delete the data
-    // For example:
-    // fetch(`http://localhost:8080/api/delete/${userShiftsData[index]._id}`, {
-    //   method: 'DELETE'
-    // })
-    // .then(response => {
-    //   // Handle success or error
-    // })
+    // Show a confirmation dialog
+    const isConfirmed = window.confirm('Are you sure you want to delete this data?');
+    if (isConfirmed) {
+      const updatedData = [...userShiftsData];
+      updatedData.splice(index, 1);
+      setUserShiftsData(updatedData);
+    }
   };
-
   const handleShowShiftsWeek = () => {
     setShowShiftsWeek(!showShiftsWeek);
   };

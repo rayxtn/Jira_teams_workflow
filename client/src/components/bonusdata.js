@@ -6,6 +6,7 @@ import { RingLoader } from 'react-spinners';
 import '../styles/UserShiftsDisplay.css';
 
 function formatDateWithDay(dateString) {
+  // Function to format a date string with the day of the week
   const options = { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' };
   return new Date(dateString).toLocaleDateString(undefined, options);
 }
@@ -15,6 +16,7 @@ function UserShiftsDisplay() {
   const [userShiftsData, setUserShiftsData] = useState({});
   const [expandedGroups, setExpandedGroups] = useState({});
 
+  // Fetch user shift data when the component mounts
   useEffect(() => {
     setLoading(true);
 
@@ -30,6 +32,7 @@ function UserShiftsDisplay() {
       });
   }, []);
 
+  // Function to toggle the expanded state of a group
   function toggleGroup(groupName) {
     setExpandedGroups((prevExpandedGroups) => ({
       ...prevExpandedGroups,
@@ -37,9 +40,9 @@ function UserShiftsDisplay() {
     }));
   }
 
+  // Function to export user shift data to a PDF
   function exportToPDF() {
     const doc = new jsPDF();
-
     let startY = 10;
 
     Object.keys(userShiftsData).forEach((groupName) => {
@@ -56,6 +59,7 @@ function UserShiftsDisplay() {
 
         startY += 15;
 
+        // Loop through user's shifts and display them in the PDF
         user.shifts.forEach((shift) => {
           const shiftInfo = `${shift.displayName} - ${formatDateWithDay(shift.startDateTime)} (${
             shift.validated ? 'Validated' : 'Not Validated'
@@ -86,17 +90,47 @@ function UserShiftsDisplay() {
     doc.save('bonusdata.pdf');
   }
 
+    // Function to handle bonification calculation
+// Function to handle bonification calculation
+function handleBonificationCalculation() {
+  const updatedUserShiftsData = { ...userShiftsData };
+
+  // Loop through the data and apply the calculation
+  for (const groupName in updatedUserShiftsData) {
+    const group = updatedUserShiftsData[groupName];
+
+    for (const userEmail in group) {
+      const user = group[userEmail];
+
+      user.shifts = user.shifts.map((shift) => {
+        // Apply the calculation to the shift
+        shift.bonification = shift.price * 1.5;
+        return shift;
+      });
+    }
+  }
+
+  // Update the state with the modified data
+  setUserShiftsData(updatedUserShiftsData);
+}
+
+  
+
   return (
     <div id="pdf-container" className="user-shifts-container">
       <div className="button-group">
+        {/* Button to export data to PDF */}
         <button className="custom-button" onClick={exportToPDF}>Export Report</button>
-        <button className="custom-button" onClick={exportToPDF}>Calculate Bonification</button>
+        {/* Button to perform bonification calculation (not implemented) */}
+        <button className="custom-button" onClick={handleBonificationCalculation}>Calculate Bonification</button>
       </div>
       {loading ? (
+        // Display a loading spinner while data is being fetched
         <div className="loading-spinner">
           <RingLoader color="#36D7B7" loading={loading} css={css`margin: 150px auto;`} size={150} />
         </div>
       ) : (
+        // Display user shift data when loading is complete
         Object.keys(userShiftsData).map((groupName) => {
           const group = userShiftsData[groupName];
           const isGroupExpanded = expandedGroups[groupName] || false;
@@ -135,19 +169,19 @@ function UserShiftsDisplay() {
                               <tbody>
                                 {user.shifts.map((shift, shiftIndex) => (
                                   <tr key={shiftIndex}>
-                                    <td>
-                                      {shift.displayName} - {formatDateWithDay(shift.startDateTime)} (
-                                      <span style={{ color: shift.validated ? 'green' : 'red' }}>
-                                        {shift.validated ? 'Validated' : 'Not Validated'}
-                                      </span>
-                                      )
-                                    </td>
+<td>
+  {shift.displayName} - {formatDateWithDay(shift.startDateTime)} (
+  <span style={{ color: shift.validated ? 'green' : 'red' }}>
+    {shift.validated ? 'Validated' : 'Not Validated'}
+  </span>
+  ) - Bonification: {shift.bonification}
+</td>
                                   </tr>
                                 ))}
                               </tbody>
                             </table>
                           </td>
-                         
+                          {/* Display bonification calculation here (not implemented) */}
                         </tr>
                       );
                     })}

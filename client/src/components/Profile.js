@@ -53,6 +53,11 @@ export default function Profile() {
     localStorage.removeItem('token');
     navigate('/')
   }
+    // logout handler function
+    function userboard(){
+      
+      navigate('/userboard')
+    }
 
   if(isLoading) return <h1 className='text-2xl font-bold'>isLoading</h1>;
   if(serverError) return <h1 className='text-xl text-red-500'>{serverError.message}</h1>
@@ -95,6 +100,7 @@ export default function Profile() {
                
                   <input {...formik.getFieldProps('address')} className={`${styles.textbox} ${extend.textbox}`} type="text" placeholder='Address' />
                   <button className={styles.btn} type='submit'>Update</button>
+                  <button className={styles.btn} onClick={userboard} to="/userboard">ADMIN PANEL </button>
                   
                
                   
@@ -105,7 +111,7 @@ export default function Profile() {
               </div>
 
           </form>
-          <button  onClick={ navigate('/userboard')}>ADMIN PANEL </button>
+          
 
         </div>
       </div>

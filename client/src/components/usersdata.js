@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import '../styles/UserTable.css'; // Import your CSS file
 
-
 function UserTable() {
   const [users, setUsers] = useState([]);
 
@@ -12,7 +11,6 @@ function UserTable() {
         const response = await axios.get('http://localhost:8080/api/usersdata');
         const users = response.data;
         setUsers(users);
-        console.log(users);
       } catch (error) {
         console.log(error);
       }
@@ -21,9 +19,23 @@ function UserTable() {
     fetchData();
   }, []);
 
+  const handleDeleteUser = async (userId) => {
+    // Display a confirmation dialog
+    const confirmDelete = window.confirm('Are you sure you want to delete this user?');
+    
+    if (confirmDelete) {
+      try {
+        await axios.delete(`http://localhost:8080/api/usersdata/${userId}`);
+        // After successful deletion, you may want to update the user list.
+        // You can re-fetch the data or update the state as needed.
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  };
+
   return (
     <div>
- 
       <table className="user-table">
         <thead>
           <tr>
@@ -38,7 +50,7 @@ function UserTable() {
               <td>{user.username}</td>
               <td>{user.email}</td>
               <td>
-                <button onClick={() => (user._id)}>
+                <button onClick={() => handleDeleteUser(user._id)}>
                   Delete
                 </button>
                 <button onClick={() => (user._id)}>

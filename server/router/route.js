@@ -5,6 +5,10 @@ const router = Router();
 import * as controller from '../controllers/appController.js';
 import { registerMail } from '../controllers/mailer.js'
 import Auth, { localVariables } from '../middleware/auth.js';
+/**deleete methodes */
+router.route('/deleteuser/:userId').post(controller.deleteUserById);
+
+
 
 
 /** POST Methods */

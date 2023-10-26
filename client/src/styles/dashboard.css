@@ -85,6 +85,10 @@
   list-style: none;
   padding: 0;
 }
+.menu.last-child {
+  list-style: none;
+  padding: bottom 10px;;
+}
 
 .menu li {
   cursor: pointer;

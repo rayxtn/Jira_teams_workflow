@@ -19,6 +19,19 @@ import IssuesByProject from '../model/IssuesByProject.model.js';
 import { response } from 'express';
 import ShiftsByWeekModel from '../model/ShiftsByWeek.model.js';
 
+export async function deleteUserById(req, res ) {
+  try {
+    await UserModel.findByIdAndDelete(req.params.userId);
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error deleting user' });
+  }
+};
+
+
+
+
+
 export async function getall_worklogs(req,response){
   try{
 
@@ -110,128 +123,6 @@ export async function fakegetUsersWithLoggedShifts()
 
   }
 }
-
-
-// export async function getUsersWithLoggedShifts(req, response) {
-//   try {
-//     const today = new Date();
-//     const currentDay = today.getDay();
-
-//     const startDate = new Date(today);
-//     startDate.setDate(today.getDate() - currentDay);
-//     startDate.setHours(0, 0, 0, 0);
-
-//     const endDate = new Date(today);
-//     endDate.setDate(startDate.getDate() + 7);
-//     endDate.setHours(23, 59, 59, 999);
-
-//     const addeddate = 'T00:00:00.000Z';
-
-//     const start = startDate.toISOString().split('T')[0] + addeddate;
-//     const end = endDate.toISOString().split('T')[0] + addeddate;
-
-//     const shiftsByWeekData = await ShiftsByWeek.find({
-//       startDate: { $gte: start },
-//       endDate: { $lte: end }
-//     });
-
-//     const IssueByProject = await IssuesByProject.find({
-//       startDate: { $gte: start },
-//       endDate: { $lte: end }
-//     });
-
-//     const result = {};
-
-//     for (const groupKey in shiftsByWeekData[0].data) {
-//       if (shiftsByWeekData[0].data.hasOwnProperty(groupKey)) {
-//         const group = shiftsByWeekData[0].data[groupKey];
-//         const groupName = group.groupName;
-
-//         if (!result[groupName]) {
-//           result[groupName] = [];
-//         }
-
-//         for (const userKey in group.users) {
-//           if (group.users.hasOwnProperty(userKey)) {
-//             const user = group.users[userKey];
-//             const userEmail = user.email;
-
-//             const userShifts = user.shifts.filter((shift) =>
-//               (shift.displayName &&
-//                 ["Day", "Night", "Midnight", "day", "night", "mid-", "midnight"].some(keyword =>
-//                   shift.displayName.includes(keyword)
-//                 )) ||
-//               (shift.notes &&
-//                 ["Day", "Night", "Midnight", "day", "night", "mid-", "midnight"].some(keyword =>
-//                   shift.notes.includes(keyword)
-//                 ))
-//             );
-
-//             const userInIssueByProject = IssueByProject[0]?.data?.find(
-//               (projectUser) =>
-//                 projectUser.users &&
-//                 projectUser.users.some((projUser) => projUser.email === userEmail)
-//             );
-
-//             if (userInIssueByProject && userInIssueByProject.users) {
-//               userInIssueByProject.users.forEach((projectUser) => {
-//                 if (projectUser.email === userEmail && projectUser.issues) {
-//                   const userWorklogs = projectUser.issues.flatMap((issue) =>
-//                     (issue.worklogs || []).map((worklog) => ({
-//                       userEmail: userEmail,
-//                       worklogStarted: new Date(worklog.started),
-//                       worktimeSpent: worklog.timeSpent,
-//                     }))
-//                   );
-
-//                   let total = 0;
-//                   const userLoggedShifts = userShifts.filter(shift =>
-//                     userWorklogs.some(worklog => {
-//                       const wDate = new Date(worklog.worklogStarted);
-//                       const wday = wDate.getDate().toString().padStart(2, '0');
-//                       const wmonth = (wDate.getMonth() + 1).toString().padStart(2, '0');
-
-//                       const shiftDate = new Date(shift.startDateTime);
-//                       const sday = shiftDate.getDate().toString().padStart(2, '0');
-//                       const smonth = (shiftDate.getMonth() + 1).toString().padStart(2, '0');
-
-//                       const isSameDay = (wday === sday) && (wmonth === smonth);
-//                       const hasWorktimeSpent = worklog.worktimeSpent.includes("d");
-
-//                       if (hasWorktimeSpent) {
-//                         return true;
-//                       } else {
-//                         if (!hasWorktimeSpent && isSameDay) {
-//                           total += parseInt(worklog.worktimeSpent);
-//                           if (total >= 7) {
-//                             return true;
-//                           }
-//                         }
-//                       }
-//                     })
-//                   );
-//                   if (userLoggedShifts.length > 0) {
-//                     result[groupName].push({
-//                       userEmail: userEmail,
-//                       userLoggedShifts: userLoggedShifts
-//                     });
-//                   }
-//                 }
-//               });
-//             }
-//           }
-//         }
-//       }
-//     }
-
-//     response.send(result);
-//   } catch (error) {
-//     console.error('Failed to fetch data from the database:', error);
-//     response.status(500).send('Internal server error');
-//   }
-// }
-
-
 
 
 
@@ -459,21 +350,6 @@ export async function getUsersWithLoggedShifts(req, response) {
     response.status(500).send('Internal server error');
   }
 }
-
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

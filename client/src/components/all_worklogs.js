@@ -13,6 +13,7 @@ const formattedDate = (dateString) => {
 const ShiftDataComponent = () => {
   const [userShiftsData, setUserShiftsData] = useState([]);
   const [showWorkLogs, setShowWorkLogs] = useState(false);
+  
 
   useEffect(() => {
     setLoading(true); // Set loading to true when starting data fetching
@@ -42,16 +43,14 @@ const ShiftDataComponent = () => {
   };
 
   const handleDelete = (index) => {
-    // You can send a request to your backend to delete the data
-    // For example:
-    // fetch(`http://localhost:8080/api/delete/${userShiftsData[index]._id}`, {
-    //   method: 'DELETE'
-    // })
-    // .then(response => {
-    //   // Handle success or error
-    // })
+    const isConfirmed = window.confirm('Are you sure you want to delete this data?');
+    if (isConfirmed) {
+      // After the data is successfully deleted, you can remove it from the state
+      const updatedData = [...userShiftsData];
+      updatedData.splice(index, 1);
+      setUserShiftsData(updatedData);
+    }
   };
-
   // Function to toggle the visibility of WorkLogsComp
   const toggleWorkLogs = () => {
     setShowWorkLogs(!showWorkLogs);
